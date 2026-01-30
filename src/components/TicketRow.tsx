@@ -1,4 +1,4 @@
-import { memo, type ChangeEvent } from 'react';
+import { memo, type ChangeEvent, type ClipboardEvent } from 'react';
 import type { TicketRow as TicketRowType } from '@/types';
 import { useTicketStore } from '@/store/useTicketStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -7,20 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Copy, Plus } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Copy, Plus } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 
 interface TicketRowProps {
     row: TicketRowType;
+    index: number;
     onAddSubtask?: () => void;
+    onOpenUsers?: () => void;
 }
 
-export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRowProps) {
-    const { updateRow, copyRow, toggleSelect } = useTicketStore();
-    const { users, sprints } = useSettingsStore() as any;
+const COLUMN_FIELDS: Array<keyof TicketRowType> = [
+    'type',
+    'summary',
+    'description',
+    'assignee',
+    'sprint',
+    'startDate',
+    'dueDate',
+    'parentKey',
+];
+
+export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: TicketRowProps) {
+    const { updateRow, copyRow, toggleSelect, ensureRowCount } = useTicketStore();
+    const { users } = useSettingsStore() as any;
 
     // Grid layout matching the header
     const gridClass = "grid grid-cols-[40px_100px_1fr_1fr_120px_100px_120px_120px_120px_80px] gap-0 border-b hover:bg-slate-50 transition-colors group items-stretch";
@@ -28,6 +38,52 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
     const handleChange = (field: keyof TicketRowType, value: any) => {
         updateRow(row.id, { [field]: value });
     };
+
+    const handlePaste = (field: keyof TicketRowType) => (e: ClipboardEvent) => {
+        const text = e.clipboardData?.getData('text/plain');
+        if (!text) return;
+
+        const startCol = COLUMN_FIELDS.indexOf(field);
+        if (startCol === -1) return;
+
+        e.preventDefault();
+
+        const grid = parseClipboard(text);
+        if (grid.length === 0) return;
+
+        ensureRowCount(index + grid.length);
+        const updatedRows = useTicketStore.getState().rows;
+
+        grid.forEach((rowCells, rowOffset) => {
+            const targetRow = updatedRows[index + rowOffset];
+            if (!targetRow) return;
+
+            rowCells.forEach((cell, colOffset) => {
+                const fieldKey = COLUMN_FIELDS[startCol + colOffset];
+                if (!fieldKey) return;
+
+                const value = cell;
+                if (fieldKey === 'type') {
+                    const lower = value.toLowerCase();
+                    if (lower.startsWith('e')) {
+                        updateRow(targetRow.id, { type: 'Epic' });
+                    } else if (lower.startsWith('t')) {
+                        updateRow(targetRow.id, { type: 'Task' });
+                    }
+                    return;
+                }
+
+                if (fieldKey === 'startDate' || fieldKey === 'dueDate') {
+                    updateRow(targetRow.id, { [fieldKey]: normalizeDateInput(value) });
+                    return;
+                }
+
+                updateRow(targetRow.id, { [fieldKey]: value });
+            });
+        });
+    };
+
+    const isChildTask = row.type === 'Task' && !!row.parentRowId;
 
     return (
         <div className={gridClass}>
@@ -45,12 +101,17 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
                     value={row.type}
                     onValueChange={(val: 'Epic' | 'Task') => handleChange('type', val)}
                 >
-                    <SelectTrigger className="h-full border-0 focus:ring-0 rounded-none bg-transparent">
+                    <SelectTrigger
+                        className={cn(
+                            "h-full border-0 focus:ring-0 rounded-none bg-white",
+                            row.type === 'Epic' ? "text-purple-700" : "text-blue-700"
+                        )}
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="Task">Task</SelectItem>
-                        <SelectItem value="Epic">Epic</SelectItem>
+                        <SelectItem value="Task" className="text-blue-700">Task</SelectItem>
+                        <SelectItem value="Epic" className="text-purple-700">Epic</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -60,7 +121,11 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
                 <Input
                     value={row.summary}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('summary', e.target.value)}
-                    className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent"
+                    onPaste={handlePaste('summary')}
+                    className={cn(
+                        "h-full border-0 focus-visible:ring-0 rounded-none bg-transparent",
+                        isChildTask && "pl-6"
+                    )}
                     placeholder="Summary"
                 />
             </div>
@@ -70,13 +135,14 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
                 <Textarea
                     value={row.description}
                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
+                    onPaste={handlePaste('description')}
                     className="h-full min-h-[40px] border-0 focus-visible:ring-0 rounded-none bg-transparent resize-none py-2 leading-tight"
                     placeholder="Description"
                 />
             </div>
 
             {/* Assignee */}
-            <div className="p-1 border-r">
+            <div className="p-1 border-r flex items-center gap-1">
                 <Select
                     value={row.assignee}
                     onValueChange={(val: string) => handleChange('assignee', val)}
@@ -97,37 +163,34 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
 
             {/* Sprint */}
             <div className="p-1 border-r">
-                <Select
+                <Input
                     value={row.sprint}
-                    onValueChange={(val: string) => handleChange('sprint', val)}
-                >
-                    <SelectTrigger className="h-full border-0 focus:ring-0 rounded-none bg-transparent text-xs p-2">
-                        <SelectValue placeholder="Sprint" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {sprints?.map((sprint: any) => (
-                            <SelectItem key={sprint.id} value={String(sprint.id)}>
-                                {sprint.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('sprint', e.target.value)}
+                    onPaste={handlePaste('sprint')}
+                    className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent text-xs"
+                    placeholder="Sprint"
+                />
             </div>
 
             {/* Start Date */}
-            <div className="p-1 border-r flex items-center justify-center">
-                <DateField
+            <div className="p-1 border-r">
+                <Input
                     value={row.startDate}
-                    onChange={(val) => handleChange('startDate', val)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('startDate', normalizeDateInput(e.target.value))}
+                    onPaste={handlePaste('startDate')}
+                    className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent text-xs"
+                    placeholder="YYYY-MM-DD"
                 />
             </div>
 
             {/* Due Date */}
-            <div className="p-1 border-r flex items-center justify-center">
-                <DateField
+            <div className="p-1 border-r">
+                <Input
                     value={row.dueDate}
-                    onChange={(val) => handleChange('dueDate', val)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('dueDate', normalizeDateInput(e.target.value))}
+                    onPaste={handlePaste('dueDate')}
+                    className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent text-xs"
+                    placeholder="YYYY-MM-DD"
                 />
             </div>
 
@@ -136,6 +199,7 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
                 <Input
                     value={row.parentKey}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('parentKey', e.target.value)}
+                    onPaste={handlePaste('parentKey')}
                     className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent text-xs"
                     placeholder="Parent key"
                     disabled={row.type === 'Epic'}
@@ -158,29 +222,63 @@ export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRo
     );
 });
 
-function DateField({ value, onChange }: { value: string, onChange: (val: string) => void }) {
-    return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button
-                    variant={"ghost"}
-                    className={cn(
-                        "w-full h-8 justify-start text-left font-normal px-2 text-xs",
-                        !value && "text-muted-foreground"
-                    )}
-                >
-                    <CalendarIcon className="mr-1 h-3 w-3" />
-                    {value ? value : <span>Pick</span>}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                    mode="single"
-                    selected={value ? new Date(value) : undefined}
-                    onSelect={(date: Date | undefined) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                    initialFocus
-                />
-            </PopoverContent>
-        </Popover>
-    );
+function normalizeDateInput(value: string) {
+    const trimmed = value.trim();
+    const digitsOnly = trimmed.replace(/[^0-9]/g, '');
+    if (digitsOnly.length === 8) {
+        const yyyy = digitsOnly.slice(0, 4);
+        const mm = digitsOnly.slice(4, 6);
+        const dd = digitsOnly.slice(6, 8);
+        return `${yyyy}-${mm}-${dd}`;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    return trimmed;
+}
+
+function parseClipboard(text: string): string[][] {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let cell = '';
+    let inQuotes = false;
+    const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    for (let i = 0; i < normalized.length; i++) {
+        const ch = normalized[i];
+        const next = normalized[i + 1];
+
+        if (ch === '"') {
+            if (inQuotes && next === '"') {
+                cell += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
+        }
+
+        if (!inQuotes && ch === '\t') {
+            row.push(cell);
+            cell = '';
+            continue;
+        }
+
+        if (!inQuotes && ch === '\n') {
+            row.push(cell);
+            if (row.length > 1 || row[0] !== '') {
+                rows.push(row);
+            }
+            row = [];
+            cell = '';
+            continue;
+        }
+
+        cell += ch;
+    }
+
+    row.push(cell);
+    if (row.length > 1 || row[0] !== '') {
+        rows.push(row);
+    }
+
+    return rows;
 }

@@ -48,6 +48,7 @@ export interface CreationRecord {
     id: string;                      // UUID
     createdAt: string;               // ISO 8601
     projectKey: string;
+    jiraUrl: string;
     epicCount: number;
     taskCount: number;
     successCount: number;

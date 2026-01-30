@@ -3,10 +3,11 @@ import type { TicketRow as TicketRowType } from '@/types';
 import { TicketRow } from './TicketRow';
 import { useTicketStore } from '@/store/useTicketStore';
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Play } from 'lucide-react';
+import { Plus, Trash2, Play, Users } from 'lucide-react';
 import { PreviewModal } from './PreviewModal';
 import { ResultModal } from './ResultModal';
 import { SubtaskModal } from './SubtaskModal';
+import { UsersModal } from './UsersModal';
 import { useTicketCreation } from '@/hooks/useTicketCreation';
 
 export function SpreadsheetTable() {
@@ -15,6 +16,7 @@ export function SpreadsheetTable() {
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [activeParentRow, setActiveParentRow] = useState<TicketRowType | null>(null);
+    const [usersModalOpen, setUsersModalOpen] = useState(false);
 
     const { startCreation, isCreating, progress, result, resetCreation } = useTicketCreation();
 
@@ -40,31 +42,7 @@ export function SpreadsheetTable() {
         setSubtaskModalOpen(true);
     };
 
-    // Paste Logic
-    useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            // Only handle paste if we aren't focused on an input
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
-            const text = e.clipboardData?.getData('text');
-            if (!text) return;
-
-            const pastedRows = text.split('\n').filter(line => line.trim());
-            pastedRows.forEach(line => {
-                const parts = line.split('\t');
-                addRow(undefined, {
-                    summary: parts[0] || '',
-                    description: parts[1] || ''
-                });
-            });
-
-            e.preventDefault();
-        };
-
-        window.addEventListener('paste', handlePaste);
-        return () => window.removeEventListener('paste', handlePaste);
-    }, [addRow]);
+    // Paste is handled per-cell to support multi-row/column pastes.
 
     return (
         <div className="flex flex-col h-full bg-white relative">
@@ -89,6 +67,7 @@ export function SpreadsheetTable() {
                 result={result}
                 onClose={handleCloseResult}
             />
+            <UsersModal open={usersModalOpen} onOpenChange={setUsersModalOpen} />
 
             {/* Toolbar */}
             <div className="flex items-center justify-between p-2 border-b bg-slate-50">
@@ -104,6 +83,9 @@ export function SpreadsheetTable() {
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => alert('Import CSV')}>
                         Import CSV
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setUsersModalOpen(true)}>
+                        <Users className="h-4 w-4 mr-1" /> Users
                     </Button>
                 </div>
             </div>
@@ -124,11 +106,13 @@ export function SpreadsheetTable() {
 
             {/* Table Body */}
             <div className="flex-1 overflow-auto">
-                {rows.map((row) => (
+                {rows.map((row, index) => (
                     <TicketRow
                         key={row.id}
                         row={row}
+                        index={index}
                         onAddSubtask={() => handleAddSubtask(row)}
+                        onOpenUsers={() => setUsersModalOpen(true)}
                     />
                 ))}
 

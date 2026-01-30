@@ -13,6 +13,7 @@ interface TicketState {
     toggleSelect: (id: string) => void;
     toggleSelectAll: () => void;
     addSubtasks: (parentId: string, types: string[], parentTitle: string) => void;
+    ensureRowCount: (count: number) => void;
 }
 
 const createEmptyRow = (): TicketRow => ({
@@ -96,6 +97,15 @@ export const useTicketStore = create<TicketState>()(
                 const currentRows = [...state.rows];
                 currentRows.splice(parentIndex + 1, 0, ...newRows);
                 return { rows: currentRows };
+            }),
+
+            ensureRowCount: (count) => set((state) => {
+                if (state.rows.length >= count) return state;
+                const newRows = [...state.rows];
+                while (newRows.length < count) {
+                    newRows.push(createEmptyRow());
+                }
+                return { rows: newRows };
             }),
         }),
         {

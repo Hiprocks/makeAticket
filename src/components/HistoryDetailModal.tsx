@@ -3,6 +3,7 @@ import type { CreationRecord } from '@/types';
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import { useSettingsStore } from '@/store/useSettingsStore';
 
 interface HistoryDetailModalProps {
     open: boolean;
@@ -12,6 +13,8 @@ interface HistoryDetailModalProps {
 
 export function HistoryDetailModal({ open, onOpenChange, record }: HistoryDetailModalProps) {
     if (!record) return null;
+    const { jiraUrl: settingsJiraUrl } = useSettingsStore();
+    const baseUrl = (record.jiraUrl || settingsJiraUrl || '').replace(/\/+$/, '');
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,14 +78,18 @@ export function HistoryDetailModal({ open, onOpenChange, record }: HistoryDetail
                                         </td>
                                         <td className="p-2 text-sm font-mono">
                                             {ticket.jiraKey ? (
-                                                <a
-                                                    href={`https://${record.projectKey}.atlassian.net/browse/${ticket.jiraKey}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="flex items-center text-blue-600 hover:underline"
-                                                >
-                                                    {ticket.jiraKey} <ExternalLink className="w-3 h-3 ml-1" />
-                                                </a>
+                                                baseUrl ? (
+                                                    <a
+                                                        href={`${baseUrl}/browse/${ticket.jiraKey}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center text-blue-600 hover:underline"
+                                                    >
+                                                        {ticket.jiraKey} <ExternalLink className="w-3 h-3 ml-1" />
+                                                    </a>
+                                                ) : (
+                                                    <span>{ticket.jiraKey}</span>
+                                                )
                                             ) : '-'}
                                         </td>
                                     </tr>

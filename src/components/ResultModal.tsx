@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, XCircle, Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
 import type { CreationRecord } from '@/types';
+import { useSettingsStore } from '@/store/useSettingsStore';
 
 interface ResultModalProps {
     open: boolean;
@@ -15,6 +16,8 @@ interface ResultModalProps {
 
 export function ResultModal({ open, onOpenChange, isCreating, progress, result, onClose }: ResultModalProps) {
     const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+    const { jiraUrl: settingsJiraUrl } = useSettingsStore();
+    const baseUrl = (result?.jiraUrl || settingsJiraUrl || '').replace(/\/+$/, '');
 
     return (
         <Dialog open={open} onOpenChange={(val) => !isCreating && onOpenChange(val)}>
@@ -87,14 +90,18 @@ export function ResultModal({ open, onOpenChange, isCreating, progress, result, 
                                         {result.tickets.filter(t => t.status === 'success').slice(0, 5).map((ticket, i) => (
                                             <div key={i} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
                                                 <span className="truncate flex-1 mr-2">{ticket.summary}</span>
-                                                <a
-                                                    href={`https://${result.projectKey}.atlassian.net/browse/${ticket.jiraKey}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="flex items-center text-blue-600 hover:underline text-xs"
-                                                >
-                                                    {ticket.jiraKey} <ExternalLink className="w-3 h-3 ml-1" />
-                                                </a>
+                                                {baseUrl ? (
+                                                    <a
+                                                        href={`${baseUrl}/browse/${ticket.jiraKey}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center text-blue-600 hover:underline text-xs"
+                                                    >
+                                                        {ticket.jiraKey} <ExternalLink className="w-3 h-3 ml-1" />
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-xs">{ticket.jiraKey}</span>
+                                                )}
                                             </div>
                                         ))}
                                         {result.successCount > 5 && (

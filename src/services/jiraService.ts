@@ -32,18 +32,61 @@ export const jiraService = {
     },
 
     async createEpic(ticket: TicketRow): Promise<string> {
-        await delay(1000);
+        const { connectionType, jiraUrl, email, apiToken, projectKey } = useSettingsStore.getState();
         if (!ticket.summary) throw new Error('Summary is required');
-        const key = `AEGIS-${Math.floor(Math.random() * 1000) + 500}`;
-        console.log(`[Mock] Created Epic: ${key} - ${ticket.summary}`);
+
+        if (connectionType !== 'jira-api') {
+            throw new Error('Claude MCP creation is not implemented');
+        }
+        if (!jiraUrl || !email || !apiToken || !projectKey) {
+            throw new Error('Jira connection is not configured');
+        }
+
+        const key = await createIssue({
+            jiraUrl,
+            email,
+            apiToken,
+            fields: {
+                project: { key: projectKey },
+                issuetype: { name: 'Epic' },
+                summary: ticket.summary,
+                description: ticket.description,
+                // Common default for Epic Name; if your Jira uses a different field id,
+                // this request will fail and we will surface the error.
+                customfield_10011: ticket.summary,
+                assignee: ticket.assignee ? { accountId: ticket.assignee } : undefined,
+            },
+        });
         return key;
     },
 
     async createTask(ticket: TicketRow): Promise<string> {
-        await delay(800);
+        const { connectionType, jiraUrl, email, apiToken, projectKey } = useSettingsStore.getState();
         if (!ticket.summary) throw new Error('Summary is required');
-        const key = `AEGIS-${Math.floor(Math.random() * 1000) + 500}`;
-        console.log(`[Mock] Created Task: ${key} - ${ticket.summary} (Parent: ${ticket.parentKey})`);
+
+        if (connectionType !== 'jira-api') {
+            throw new Error('Claude MCP creation is not implemented');
+        }
+        if (!jiraUrl || !email || !apiToken || !projectKey) {
+            throw new Error('Jira connection is not configured');
+        }
+
+        const fields: Record<string, any> = {
+            project: { key: projectKey },
+            issuetype: { name: 'Task' },
+            summary: ticket.summary,
+            description: ticket.description,
+        };
+        if (ticket.assignee) fields.assignee = { accountId: ticket.assignee };
+        if (ticket.parentKey) fields.parent = { key: ticket.parentKey };
+        if (ticket.sprint) fields.customfield_10020 = Number(ticket.sprint);
+
+        const key = await createIssue({
+            jiraUrl,
+            email,
+            apiToken,
+            fields,
+        });
         return key;
     },
 
@@ -59,4 +102,36 @@ export const jiraService = {
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function createIssue(params: {
+    jiraUrl: string;
+    email: string;
+    apiToken: string;
+    fields: Record<string, any>;
+}): Promise<string> {
+    const baseUrl = params.jiraUrl.replace(/\/+$/, '');
+    const res = await fetch(`${baseUrl}/rest/api/3/issue`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${btoa(`${params.email}:${params.apiToken}`)}`,
+        },
+        body: JSON.stringify({ fields: cleanFields(params.fields) }),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Jira create failed (${res.status}): ${text}`);
+    }
+
+    const data = await res.json();
+    if (!data?.key) throw new Error('Jira response missing issue key');
+    return data.key as string;
+}
+
+function cleanFields(fields: Record<string, any>) {
+    return Object.fromEntries(
+        Object.entries(fields).filter(([, value]) => value !== undefined && value !== '')
+    );
 }
