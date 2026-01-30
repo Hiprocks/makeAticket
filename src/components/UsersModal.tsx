@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useSettingsStore } from '@/store/useSettingsStore';
 import type { JiraUser } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
+import { downloadJson, pickJsonFile } from '@/lib/fileStorage';
 
 interface UsersModalProps {
     open: boolean;
@@ -14,10 +15,12 @@ interface UsersModalProps {
 export function UsersModal({ open, onOpenChange }: UsersModalProps) {
     const { users, setCache } = useSettingsStore();
     const [draft, setDraft] = useState<JiraUser[]>([]);
+    const [warning, setWarning] = useState<string | null>(null);
 
     useEffect(() => {
         if (open) {
             setDraft(users.length > 0 ? users : []);
+            setWarning(null);
         }
     }, [open, users]);
 
@@ -77,7 +80,12 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
                 emailAddress: ''
             }))
             .filter(u => u.accountId && u.displayName);
-        setCache({ users: sanitized });
+        const { unique, dropped } = dedupeUsers(sanitized);
+        setCache({ users: unique });
+        if (dropped > 0) {
+            setWarning(`Removed ${dropped} duplicate entr${dropped === 1 ? 'y' : 'ies'}.`);
+            return;
+        }
         onOpenChange(false);
     };
 
@@ -91,9 +99,39 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">Name / JiraID</div>
-                        <Button variant="outline" size="sm" onClick={handleAdd}>
-                            <Plus className="h-4 w-4 mr-1" /> Add
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadJson('jbc-users.json', { version: 1, users: draft })}
+                            >
+                                Export
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                    try {
+                                        const data = await pickJsonFile();
+                                        const imported = Array.isArray((data as any)?.users) ? (data as any).users : data;
+                                        if (Array.isArray(imported)) {
+                                            setDraft(imported.map(u => ({
+                                                accountId: String((u as any).accountId ?? ''),
+                                                displayName: String((u as any).displayName ?? ''),
+                                                emailAddress: ''
+                                            })));
+                                        }
+                                    } catch (err: any) {
+                                        alert(`Import failed: ${err.message || err}`);
+                                    }
+                                }}
+                            >
+                                Import
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handleAdd}>
+                                <Plus className="h-4 w-4 mr-1" /> Add
+                            </Button>
+                        </div>
                     </div>
 
                     <div
@@ -139,6 +177,9 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
                             ))
                         )}
                     </div>
+                    {warning && (
+                        <div className="text-sm text-amber-600">{warning}</div>
+                    )}
                 </div>
 
                 <DialogFooter className="mt-4">
@@ -196,4 +237,25 @@ function parseClipboard(text: string): string[][] {
     }
 
     return rows;
+}
+
+function dedupeUsers(users: JiraUser[]) {
+    const seenId = new Set<string>();
+    const seenName = new Set<string>();
+    const unique: JiraUser[] = [];
+    let dropped = 0;
+
+    for (const user of users) {
+        const idKey = user.accountId.toLowerCase();
+        const nameKey = user.displayName.toLowerCase();
+        if (seenId.has(idKey) || seenName.has(nameKey)) {
+            dropped++;
+            continue;
+        }
+        seenId.add(idKey);
+        seenName.add(nameKey);
+        unique.push(user);
+    }
+
+    return { unique, dropped };
 }

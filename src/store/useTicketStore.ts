@@ -14,6 +14,8 @@ interface TicketState {
     toggleSelectAll: () => void;
     addSubtasks: (parentId: string, types: string[], parentTitle: string) => void;
     ensureRowCount: (count: number) => void;
+    replaceRowsFromImport: (rows: Partial<TicketRow>[]) => void;
+    clearRows: () => void;
 }
 
 const createEmptyRow = (): TicketRow => ({
@@ -107,10 +109,21 @@ export const useTicketStore = create<TicketState>()(
                 }
                 return { rows: newRows };
             }),
+
+            replaceRowsFromImport: (rows) => set(() => {
+                const normalized: TicketRow[] = (rows || []).map((row) => ({
+                    ...createEmptyRow(),
+                    ...row,
+                    id: row.id || uuidv4(),
+                    selected: row.selected ?? true,
+                    type: row.type === 'Epic' ? 'Epic' : 'Task',
+                }));
+                return { rows: normalized.length > 0 ? normalized : [createEmptyRow()] };
+            }),
+            clearRows: () => set(() => ({ rows: [createEmptyRow()] })),
         }),
         {
             name: 'jbc-draft',
-            skipHydration: true, // Optional: might want validation before rehydration
         }
     )
 );

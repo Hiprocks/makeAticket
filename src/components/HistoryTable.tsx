@@ -4,9 +4,10 @@ import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { HistoryDetailModal } from './HistoryDetailModal';
 import type { CreationRecord } from '@/types';
+import { downloadJson, pickJsonFile } from '@/lib/fileStorage';
 
 export function HistoryTable() {
-    const { records, clearHistory } = useHistoryStore();
+    const { records, clearHistory, replaceRecordsFromImport } = useHistoryStore();
     const [selectedRecord, setSelectedRecord] = useState<CreationRecord | null>(null);
 
     return (
@@ -19,15 +20,39 @@ export function HistoryTable() {
 
             <div className="flex items-center justify-between p-4 border-b">
                 <h3 className="font-medium">Creation history ({records.length})</h3>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        if (confirm('Clear all history?')) clearHistory();
-                    }}
-                >
-                    Clear history
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadJson('jbc-history.json', { version: 1, records })}
+                    >
+                        Export
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                            try {
+                                const data = await pickJsonFile();
+                                const imported = Array.isArray((data as any)?.records) ? (data as any).records : data;
+                                replaceRecordsFromImport(Array.isArray(imported) ? imported : []);
+                            } catch (err: any) {
+                                alert(`Import failed: ${err.message || err}`);
+                            }
+                        }}
+                    >
+                        Import
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            if (confirm('Clear all history?')) clearHistory();
+                        }}
+                    >
+                        Clear history
+                    </Button>
+                </div>
             </div>
 
             <div className="flex-1 overflow-auto">

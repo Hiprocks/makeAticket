@@ -7,7 +7,7 @@ import type { CreationRecord, CreatedTicket } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useTicketCreation() {
-    const { rows } = useTicketStore();
+    const { rows, clearRows } = useTicketStore();
     const { addRecord } = useHistoryStore();
     const { projectKey, jiraUrl, users } = useSettingsStore();
 
@@ -97,6 +97,87 @@ export function useTicketCreation() {
             };
             addRecord(record);
             setResult(record);
+            if (failCount === 0 && successDate > 0) {
+                clearRows();
+            }
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const startCreationDebug = async () => {
+        const selectedRows = rows.filter(r => r.selected);
+        if (selectedRows.length === 0) return;
+
+        setIsCreating(true);
+        setProgress({ current: 0, total: selectedRows.length, message: 'Debug creating...' });
+
+        const createdTickets: CreatedTicket[] = [];
+        const rowIdToKey = new Map<string, string>();
+        let successCount = 0;
+
+        try {
+            for (let i = 0; i < selectedRows.length; i++) {
+                const row = selectedRows[i];
+                setProgress({
+                    current: i + 1,
+                    total: selectedRows.length,
+                    message: `Debug creating: ${row.summary}`
+                });
+
+                if (!row.summary.trim()) {
+                    createdTickets.push({
+                        rowId: row.id,
+                        type: row.type,
+                        summary: row.summary,
+                        assignee: row.assignee,
+                        parentKey: row.parentKey,
+                        jiraKey: null,
+                        status: 'failed',
+                        errorMessage: 'Summary is required'
+                    });
+                    continue;
+                }
+
+                if (row.parentRowId && rowIdToKey.has(row.parentRowId)) {
+                    row.parentKey = rowIdToKey.get(row.parentRowId)!;
+                }
+
+                const keyPrefix = projectKey || 'DEBUG';
+                const key = `${keyPrefix}-${1000 + i}`;
+                if (row.type === 'Epic') {
+                    rowIdToKey.set(row.id, key);
+                }
+
+                createdTickets.push({
+                    rowId: row.id,
+                    type: row.type,
+                    summary: row.summary,
+                    assignee: row.assignee,
+                    parentKey: row.parentKey,
+                    jiraKey: key,
+                    status: 'success',
+                    errorMessage: null
+                });
+                successCount++;
+            }
+
+            const record: CreationRecord = {
+                id: uuidv4(),
+                createdAt: new Date().toISOString(),
+                projectKey: projectKey || 'DEBUG',
+                jiraUrl: jiraUrl,
+                epicCount: selectedRows.filter(r => r.type === 'Epic').length,
+                taskCount: selectedRows.filter(r => r.type === 'Task').length,
+                successCount: successCount,
+                failCount: selectedRows.length - successCount,
+                tickets: createdTickets
+            };
+            addRecord(record);
+            setResult(record);
+            if (record.failCount === 0 && record.successCount > 0) {
+                clearRows();
+            }
         } finally {
             setIsCreating(false);
         }
@@ -112,6 +193,7 @@ export function useTicketCreation() {
         progress,
         result,
         startCreation,
+        startCreationDebug,
         resetCreation
     };
 }
