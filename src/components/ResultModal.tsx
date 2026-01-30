@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, XCircle, Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
-import type { CreationRecord, CreatedTicket } from '@/types';
+import type { CreationRecord } from '@/types';
 
 interface ResultModalProps {
     open: boolean;
@@ -21,7 +21,7 @@ export function ResultModal({ open, onOpenChange, isCreating, progress, result, 
             <DialogContent className="max-w-2xl" onInteractOutside={(e) => isCreating && e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle>
-                        {isCreating ? '티켓 생성 중...' : '생성 완료'}
+                        {isCreating ? 'Creating tickets...' : 'Creation result'}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -39,34 +39,32 @@ export function ResultModal({ open, onOpenChange, isCreating, progress, result, 
                         </div>
                     ) : result ? (
                         <div className="space-y-6">
-                            {/* Summary Stats */}
                             <div className="grid grid-cols-3 gap-4 text-center">
                                 <div className="bg-slate-50 p-3 rounded-lg border">
                                     <div className="text-2xl font-bold">{result.tickets.length}</div>
-                                    <div className="text-xs text-muted-foreground uppercase">총 티켓</div>
+                                    <div className="text-xs text-muted-foreground uppercase">Total</div>
                                 </div>
                                 <div className="bg-green-50 p-3 rounded-lg border border-green-100 text-green-700">
                                     <div className="text-2xl font-bold flex items-center justify-center gap-2">
                                         <CheckCircle2 className="w-5 h-5" />
                                         {result.successCount}
                                     </div>
-                                    <div className="text-xs opacity-80 uppercase">성공</div>
+                                    <div className="text-xs opacity-80 uppercase">Success</div>
                                 </div>
                                 <div className={`p-3 rounded-lg border ${result.failCount > 0 ? 'bg-red-50 border-red-100 text-red-700' : 'bg-slate-50 opacity-50'}`}>
                                     <div className="text-2xl font-bold flex items-center justify-center gap-2">
                                         {result.failCount > 0 && <XCircle className="w-5 h-5" />}
                                         {result.failCount}
                                     </div>
-                                    <div className="text-xs opacity-80 uppercase">실패</div>
+                                    <div className="text-xs opacity-80 uppercase">Failed</div>
                                 </div>
                             </div>
 
-                            {/* Failed Items List */}
                             {result.failCount > 0 && (
                                 <div className="border rounded-md bg-red-50/50">
                                     <div className="p-2 border-b text-sm font-medium text-red-700 flex items-center">
                                         <AlertTriangle className="w-4 h-4 mr-2" />
-                                        실패 항목 ({result.failCount})
+                                        Failed items ({result.failCount})
                                     </div>
                                     <div className="max-h-40 overflow-y-auto p-2 space-y-2">
                                         {result.tickets.filter(t => t.status === 'failed').map((ticket, i) => (
@@ -82,10 +80,9 @@ export function ResultModal({ open, onOpenChange, isCreating, progress, result, 
                                 </div>
                             )}
 
-                            {/* Success Items List (Preview) */}
                             {result.successCount > 0 && (
                                 <div className="space-y-2">
-                                    <h4 className="text-sm font-medium">생성된 티켓 (최근 5개)</h4>
+                                    <h4 className="text-sm font-medium">Recent created (up to 5)</h4>
                                     <div className="text-sm space-y-1">
                                         {result.tickets.filter(t => t.status === 'success').slice(0, 5).map((ticket, i) => (
                                             <div key={i} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
@@ -101,7 +98,9 @@ export function ResultModal({ open, onOpenChange, isCreating, progress, result, 
                                             </div>
                                         ))}
                                         {result.successCount > 5 && (
-                                            <div className="text-xs text-center text-muted-foreground">... 외 {result.successCount - 5}건</div>
+                                            <div className="text-xs text-center text-muted-foreground">
+                                                ... and {result.successCount - 5} more
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -112,9 +111,9 @@ export function ResultModal({ open, onOpenChange, isCreating, progress, result, 
 
                 <DialogFooter>
                     {isCreating ? (
-                        <Button disabled>생성 중...</Button>
+                        <Button disabled>Creating...</Button>
                     ) : (
-                        <Button onClick={onClose}>닫기</Button>
+                        <Button onClick={onClose}>Close</Button>
                     )}
                 </DialogFooter>
             </DialogContent>

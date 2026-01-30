@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { Header } from './Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSettingsStore } from '@/store/useSettingsStore';
-
 import { SettingsModal } from './SettingsModal';
-
 import { SpreadsheetTable } from './SpreadsheetTable';
 import { HistoryTable } from './HistoryTable';
-// const HistoryTab = () => <div className="p-4">History Tab Content</div>;
-
-
 
 export function Layout() {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -23,8 +17,8 @@ export function Layout() {
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                         <TabsList>
-                            <TabsTrigger value="create">생성</TabsTrigger>
-                            <TabsTrigger value="history">기록</TabsTrigger>
+                            <TabsTrigger value="create">Create</TabsTrigger>
+                            <TabsTrigger value="history">History</TabsTrigger>
                         </TabsList>
                     </div>
 

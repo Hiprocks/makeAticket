@@ -1,32 +1,30 @@
-import { memo } from 'react';
+import { memo, type ChangeEvent } from 'react';
 import type { TicketRow as TicketRowType } from '@/types';
 import { useTicketStore } from '@/store/useTicketStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";  // Need to install or component
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Copy, Plus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar"; // Need to install
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface TicketRowProps {
     row: TicketRowType;
-    index: number;
     onAddSubtask?: () => void;
 }
 
-export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: TicketRowProps) {
+export const TicketRow = memo(function TicketRow({ row, onAddSubtask }: TicketRowProps) {
     const { updateRow, copyRow, toggleSelect } = useTicketStore();
-    const { users, sprints } = useSettingsStore() as any; // Bypass TS error for build
+    const { users, sprints } = useSettingsStore() as any;
 
     // Grid layout matching the header
     const gridClass = "grid grid-cols-[40px_100px_1fr_1fr_120px_100px_120px_120px_120px_80px] gap-0 border-b hover:bg-slate-50 transition-colors group items-stretch";
 
-    // Helper for input update
     const handleChange = (field: keyof TicketRowType, value: any) => {
         updateRow(row.id, { [field]: value });
     };
@@ -61,9 +59,9 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
             <div className="p-1 border-r">
                 <Input
                     value={row.summary}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('summary', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('summary', e.target.value)}
                     className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent"
-                    placeholder="제목 입력"
+                    placeholder="Summary"
                 />
             </div>
 
@@ -71,9 +69,9 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
             <div className="p-1 border-r">
                 <Textarea
                     value={row.description}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
                     className="h-full min-h-[40px] border-0 focus-visible:ring-0 rounded-none bg-transparent resize-none py-2 leading-tight"
-                    placeholder="설명"
+                    placeholder="Description"
                 />
             </div>
 
@@ -84,14 +82,15 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
                     onValueChange={(val: string) => handleChange('assignee', val)}
                 >
                     <SelectTrigger className="h-full border-0 focus:ring-0 rounded-none bg-transparent text-xs p-2">
-                        <SelectValue placeholder="담당자" />
+                        <SelectValue placeholder="Assignee" />
                     </SelectTrigger>
                     <SelectContent>
-                        {/* Mock Users if empty */}
-                        <SelectItem value="none">미지정</SelectItem>
-                        {/* We can map mock users here for now, or real ones */}
-                        <SelectItem value="user1">홍길동</SelectItem>
-                        <SelectItem value="user2">김철수</SelectItem>
+                        <SelectItem value="none">Unassigned</SelectItem>
+                        {users?.map((user: any) => (
+                            <SelectItem key={user.accountId} value={user.accountId}>
+                                {user.displayName}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -106,8 +105,12 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
                         <SelectValue placeholder="Sprint" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="none">미지정</SelectItem>
-                        <SelectItem value="101">Sprint 101</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
+                        {sprints?.map((sprint: any) => (
+                            <SelectItem key={sprint.id} value={String(sprint.id)}>
+                                {sprint.name}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -132,21 +135,21 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
             <div className="p-1 border-r">
                 <Input
                     value={row.parentKey}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('parentKey', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('parentKey', e.target.value)}
                     className="h-full border-0 focus-visible:ring-0 rounded-none bg-transparent text-xs"
-                    placeholder="상위키"
-                    disabled={row.type === 'Epic'} // Epic generally doesn't have parent in this context, or it's Initiatives
+                    placeholder="Parent key"
+                    disabled={row.type === 'Epic'}
                 />
             </div>
 
             {/* Actions */}
             <div className="p-1 flex items-center justify-center gap-1">
                 {row.type === 'Task' ? (
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyRow(row.id)} title="복사">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyRow(row.id)} title="Copy">
                         <Copy className="h-3 w-3" />
                     </Button>
                 ) : (
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onAddSubtask} title="하위 일감">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onAddSubtask} title="Add subtasks">
                         <Plus className="h-3 w-3" />
                     </Button>
                 )}
@@ -155,7 +158,6 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
     );
 });
 
-// Helper component for Date Picker to keep main component clean
 function DateField({ value, onChange }: { value: string, onChange: (val: string) => void }) {
     return (
         <Popover>

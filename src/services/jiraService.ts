@@ -1,13 +1,12 @@
 import type { JiraUser, JiraSprint, TicketRow } from '@/types';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
-// Mock Data
 const MOCK_USERS: JiraUser[] = [
-    { accountId: '1', displayName: '홍길동', emailAddress: 'hong@company.com' },
-    { accountId: '2', displayName: '김기획', emailAddress: 'kim@company.com' },
-    { accountId: '3', displayName: '이개발', emailAddress: 'lee@company.com' },
-    { accountId: '4', displayName: '박아트', emailAddress: 'park@company.com' },
-    { accountId: '5', displayName: '최테크', emailAddress: 'choi@company.com' },
+    { accountId: '1', displayName: 'Hong', emailAddress: 'hong@company.com' },
+    { accountId: '2', displayName: 'Kim', emailAddress: 'kim@company.com' },
+    { accountId: '3', displayName: 'Lee', emailAddress: 'lee@company.com' },
+    { accountId: '4', displayName: 'Park', emailAddress: 'park@company.com' },
+    { accountId: '5', displayName: 'Choi', emailAddress: 'choi@company.com' },
 ];
 
 const MOCK_SPRINTS: JiraSprint[] = [
@@ -43,18 +42,15 @@ export const jiraService = {
     async createTask(ticket: TicketRow): Promise<string> {
         await delay(800);
         if (!ticket.summary) throw new Error('Summary is required');
-        // Fail randomly for testing? No, keep it stable for now.
         const key = `AEGIS-${Math.floor(Math.random() * 1000) + 500}`;
         console.log(`[Mock] Created Task: ${key} - ${ticket.summary} (Parent: ${ticket.parentKey})`);
         return key;
     },
 
-    // Helper to check connection
     async checkConnection(): Promise<boolean> {
         await delay(1000);
         const { connectionType, apiToken, email } = useSettingsStore.getState();
         if (connectionType === 'jira-api') {
-            // Simple mock validation
             return !!apiToken && !!email;
         }
         return true;

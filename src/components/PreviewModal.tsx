@@ -15,7 +15,6 @@ export function PreviewModal({ open, onOpenChange, rows, onConfirm }: PreviewMod
     const epicCount = selectedRows.filter(r => r.type === 'Epic').length;
     const taskCount = selectedRows.filter(r => r.type === 'Task').length;
 
-    // Simple validation
     const invalidRows = selectedRows.filter(r => !r.summary);
     const hasErrors = invalidRows.length > 0;
 
@@ -23,12 +22,12 @@ export function PreviewModal({ open, onOpenChange, rows, onConfirm }: PreviewMod
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>생성 예정 티켓 미리보기</DialogTitle>
+                    <DialogTitle>Preview tickets</DialogTitle>
                 </DialogHeader>
 
                 <div className="py-2 flex-1 overflow-y-auto">
                     <div className="flex items-center justify-between mb-4 bg-muted p-3 rounded-md text-sm">
-                        <span>총 <strong>{selectedRows.length}</strong>개 티켓 생성 예정</span>
+                        <span>Total: <strong>{selectedRows.length}</strong></span>
                         <div className="space-x-2">
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Epic: {epicCount}</span>
                             <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Task: {taskCount}</span>
@@ -40,10 +39,10 @@ export function PreviewModal({ open, onOpenChange, rows, onConfirm }: PreviewMod
                             <thead className="bg-slate-50 border-b">
                                 <tr>
                                     <th className="p-2 font-medium text-muted-foreground w-12 text-center">#</th>
-                                    <th className="p-2 font-medium text-muted-foreground w-16">유형</th>
-                                    <th className="p-2 font-medium text-muted-foreground">제목</th>
-                                    <th className="p-2 font-medium text-muted-foreground w-24">담당자</th>
-                                    <th className="p-2 font-medium text-muted-foreground w-24">상위업무</th>
+                                    <th className="p-2 font-medium text-muted-foreground w-16">Type</th>
+                                    <th className="p-2 font-medium text-muted-foreground">Summary</th>
+                                    <th className="p-2 font-medium text-muted-foreground w-24">Assignee</th>
+                                    <th className="p-2 font-medium text-muted-foreground w-24">Parent</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -57,7 +56,7 @@ export function PreviewModal({ open, onOpenChange, rows, onConfirm }: PreviewMod
                                             </span>
                                         </td>
                                         <td className={`p-2 ${!row.summary ? 'text-red-500 font-medium' : ''}`}>
-                                            {row.summary || '(제목 없음)'}
+                                            {row.summary || '(missing summary)'}
                                         </td>
                                         <td className="p-2 text-muted-foreground">{row.assignee === 'none' || !row.assignee ? '-' : row.assignee}</td>
                                         <td className="p-2 text-muted-foreground">{row.parentKey || '-'}</td>
@@ -70,14 +69,14 @@ export function PreviewModal({ open, onOpenChange, rows, onConfirm }: PreviewMod
                     {hasErrors && (
                         <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-md flex items-center text-sm">
                             <AlertTriangle className="w-4 h-4 mr-2" />
-                            <span>제목이 없는 티켓이 {invalidRows.length}건 있습니다. 생성 전 확인해주세요.</span>
+                            <span>Some rows are missing summaries ({invalidRows.length}). Please review before continuing.</span>
                         </div>
                     )}
                 </div>
 
                 <DialogFooter className="mt-4">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>수정하기</Button>
-                    <Button onClick={onConfirm} disabled={hasErrors}>생성 확정</Button>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Back</Button>
+                    <Button onClick={onConfirm} disabled={hasErrors}>Confirm</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

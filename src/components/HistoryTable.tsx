@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useHistoryStore } from '@/store/useHistoryStore';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle } from 'lucide-react';
 import { HistoryDetailModal } from './HistoryDetailModal';
 import type { CreationRecord } from '@/types';
 
@@ -19,30 +18,36 @@ export function HistoryTable() {
             />
 
             <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-medium">생성 이력 ({records.length})</h3>
-                <Button variant="outline" size="sm" onClick={() => {
-                    if (confirm('기록을 모두 삭제하시겠습니까?')) clearHistory();
-                }}>기록 초기화</Button>
+                <h3 className="font-medium">Creation history ({records.length})</h3>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        if (confirm('Clear all history?')) clearHistory();
+                    }}
+                >
+                    Clear history
+                </Button>
             </div>
 
             <div className="flex-1 overflow-auto">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 border-b sticky top-0">
                         <tr>
-                            <th className="p-3 font-medium text-muted-foreground w-40">일시</th>
-                            <th className="p-3 font-medium text-muted-foreground">프로젝트</th>
+                            <th className="p-3 font-medium text-muted-foreground w-40">Created</th>
+                            <th className="p-3 font-medium text-muted-foreground">Project</th>
                             <th className="p-3 font-medium text-muted-foreground text-center">Epic</th>
                             <th className="p-3 font-medium text-muted-foreground text-center">Task</th>
-                            <th className="p-3 font-medium text-muted-foreground text-center">성공</th>
-                            <th className="p-3 font-medium text-muted-foreground text-center">실패</th>
-                            <th className="p-3 font-medium text-muted-foreground text-right">상세</th>
+                            <th className="p-3 font-medium text-muted-foreground text-center">Success</th>
+                            <th className="p-3 font-medium text-muted-foreground text-center">Failed</th>
+                            <th className="p-3 font-medium text-muted-foreground text-right">Detail</th>
                         </tr>
                     </thead>
                     <tbody>
                         {records.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                                    생성 기록이 없습니다.
+                                    No history yet.
                                 </td>
                             </tr>
                         ) : (
@@ -60,7 +65,7 @@ export function HistoryTable() {
                                     </td>
                                     <td className="p-3 text-right">
                                         <Button variant="ghost" size="sm" onClick={() => setSelectedRecord(record)}>
-                                            보기
+                                            View
                                         </Button>
                                     </td>
                                 </tr>
