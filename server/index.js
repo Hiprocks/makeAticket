@@ -43,18 +43,17 @@ app.post('/api/jira/issue', async (req, res) => {
       assignee: assignee ? { accountId: assignee } : undefined,
     };
 
-    if (type === 'Epic') {
-      if (!meta.epicNameFieldId) {
-        return res.status(400).json({ error: 'Epic Name field not found in Jira metadata' });
-      }
+    if (type === 'Epic' && meta.epicNameFieldId) {
       fields[meta.epicNameFieldId] = summary;
     }
 
     if (type === 'Task' && parentKey) {
-      if (!meta.epicLinkFieldId) {
-        return res.status(400).json({ error: 'Epic Link field not found in Jira metadata' });
+      if (meta.epicLinkFieldId) {
+        fields[meta.epicLinkFieldId] = parentKey;
+      } else {
+        // Team-managed projects often use "parent" instead of Epic Link.
+        fields.parent = { key: parentKey };
       }
-      fields[meta.epicLinkFieldId] = parentKey;
     }
 
     const key = await createIssue({ jiraUrl, email, apiToken, fields });
