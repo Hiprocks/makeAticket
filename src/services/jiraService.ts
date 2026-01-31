@@ -34,12 +34,8 @@ export const jiraService = {
     },
 
     async createEpic(ticket: TicketRow): Promise<string> {
-        const { connectionType, projectKey } = useSettingsStore.getState();
+        const { projectKey } = useSettingsStore.getState();
         if (!ticket.summary) throw new Error('Summary is required');
-
-        if (connectionType !== 'jira-api') {
-            throw new Error('Claude MCP creation is not implemented');
-        }
 
         const key = await createIssueViaProxy({
             type: 'Epic',
@@ -52,12 +48,8 @@ export const jiraService = {
     },
 
     async createTask(ticket: TicketRow): Promise<string> {
-        const { connectionType, projectKey } = useSettingsStore.getState();
+        const { projectKey } = useSettingsStore.getState();
         if (!ticket.summary) throw new Error('Summary is required');
-
-        if (connectionType !== 'jira-api') {
-            throw new Error('Claude MCP creation is not implemented');
-        }
 
         const key = await createIssueViaProxy({
             type: 'Task',

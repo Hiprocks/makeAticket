@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# makeAticket
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Jira issue bulk creator (Epic/Task) with a small local proxy server.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Quick Start
+1) Install
+```
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2) Create `.env` in the project root
 ```
+JIRA_URL=https://gamejang2.atlassian.net
+JIRA_EMAIL=you@company.com
+JIRA_API_TOKEN=your_api_token
+JIRA_PROJECT_KEY=GAMJANG
+
+API_PORT=5174
+APP_ORIGIN=http://localhost:5173
+
+VITE_API_BASE=http://localhost:5174
+VITE_JIRA_URL=https://gamejang2.atlassian.net
+```
+
+3) Run backend + frontend
+```
+node server/index.js
+npm run dev
+```
+
+4) Open
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:5174/api/health
+
+## Project Settings (Important)
+In the app, open Settings and set **Project key**.
+- This key is required for creating tickets.
+- You can also set a default in `.env` using `JIRA_PROJECT_KEY`.
+
+## Notes / Troubleshooting
+- If you change `.env`, restart the backend.
+- `JIRA_URL` must be the base Jira URL only (no `/rest` path).
+- Jira Cloud uses `/rest/api/3` automatically (already supported).

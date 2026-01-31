@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface SettingsModalProps {
     open: boolean;
@@ -17,7 +16,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     const settings = useSettingsStore();
-    const { register, handleSubmit, setValue, watch, reset } = useForm<Settings>({
+    const { register, handleSubmit, setValue, reset } = useForm<Settings>({
         defaultValues: settings
     });
 
@@ -31,8 +30,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         settings.setConnection(data);
         onOpenChange(false);
     };
-
-    const connectionType = watch('connectionType');
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,67 +48,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
                         {/* Jira Connection Tab */}
                         <TabsContent value="connection" className="space-y-4">
-                            <div className="space-y-4 border p-4 rounded-md">
-                                <Label>Connection type</Label>
-                                <RadioGroup
-                                    defaultValue={connectionType}
-                                    onValueChange={(val: string) => setValue('connectionType', val as 'jira-api' | 'claude-mcp')}
-                                    className="flex space-x-4"
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="jira-api" id="r-api" />
-                                        <Label htmlFor="r-api">Jira API</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="claude-mcp" id="r-mcp" />
-                                        <Label htmlFor="r-mcp">Claude MCP</Label>
-                                    </div>
-                                </RadioGroup>
+                            <div className="space-y-2">
+                                <Label htmlFor="projectKey">Project key</Label>
+                                <Input id="projectKey" placeholder="AEGIS" {...register('projectKey')} />
+                                <p className="text-xs text-muted-foreground">
+                                    Jira URL and credentials are read from the server .env.
+                                </p>
                             </div>
-
-                            {connectionType === 'jira-api' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="jiraUrl">Jira URL</Label>
-                                            <Input id="jiraUrl" placeholder="https://company.atlassian.net" {...register('jiraUrl')} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="projectKey">Project key</Label>
-                                            <Input id="projectKey" placeholder="AEGIS" {...register('projectKey')} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input id="email" placeholder="user@company.com" {...register('email')} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="apiToken">API Token</Label>
-                                        <Input id="apiToken" type="password" placeholder="••••••••" {...register('apiToken')} />
-                                        <p className="text-xs text-muted-foreground">
-                                            <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer" className="underline">
-                                                Generate token
-                                            </a>
-                                        </p>
-                                    </div>
-
-                                    <div className="flex justify-end">
-                                        <Button type="button" variant="outline" onClick={() => alert('Not implemented')}>
-                                            Test connection
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {connectionType === 'claude-mcp' && (
-                                <div className="p-4 bg-muted rounded-md text-sm">
-                                    Configure Claude MCP and Atlassian connection in your MCP settings.
-                                    <div className="mt-2 space-y-2">
-                                        <Label htmlFor="projectKeyMcp">Project key</Label>
-                                        <Input id="projectKeyMcp" placeholder="AEGIS" {...register('projectKey')} />
-                                    </div>
-                                </div>
-                            )}
                         </TabsContent>
 
                         {/* Defaults Tab */}

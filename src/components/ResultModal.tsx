@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, XCircle, Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
 import type { CreationRecord } from '@/types';
-import { useSettingsStore } from '@/store/useSettingsStore';
 
 interface ResultModalProps {
     open: boolean;
@@ -16,8 +15,7 @@ interface ResultModalProps {
 
 export function ResultModal({ open, onOpenChange, isCreating, progress, result, onClose }: ResultModalProps) {
     const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
-    const { jiraUrl: settingsJiraUrl } = useSettingsStore();
-    const baseUrl = (result?.jiraUrl || settingsJiraUrl || '').replace(/\/+$/, '');
+    const baseUrl = (result?.jiraUrl || import.meta.env.VITE_JIRA_URL || '').replace(/\/+$/, '');
 
     return (
         <Dialog open={open} onOpenChange={(val) => !isCreating && onOpenChange(val)}>

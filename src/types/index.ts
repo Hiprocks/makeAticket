@@ -14,10 +14,6 @@ export interface TicketRow {
 
 export interface Settings {
     // Jira 연결
-    connectionType: 'jira-api' | 'claude-mcp';
-    jiraUrl: string;                 // https://xxx.atlassian.net
-    email: string;
-    apiToken: string;
     projectKey: string;              // AEGIS
 
     // 기본값

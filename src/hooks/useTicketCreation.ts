@@ -9,7 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 export function useTicketCreation() {
     const { rows, clearRows } = useTicketStore();
     const { addRecord } = useHistoryStore();
-    const { projectKey, jiraUrl, users } = useSettingsStore();
+    const { projectKey, users } = useSettingsStore();
+    const jiraUrl = import.meta.env.VITE_JIRA_URL || '';
 
     const [isCreating, setIsCreating] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });

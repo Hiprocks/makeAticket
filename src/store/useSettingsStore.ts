@@ -14,10 +14,6 @@ interface SettingsState extends Settings {
 }
 
 const defaultSettings: Settings = {
-    connectionType: 'jira-api',
-    jiraUrl: '',
-    email: '',
-    apiToken: '',
     projectKey: '',
     defaultType: 'Task',
     defaultSprintId: '',

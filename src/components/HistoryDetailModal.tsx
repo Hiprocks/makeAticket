@@ -3,7 +3,6 @@ import type { CreationRecord } from '@/types';
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
-import { useSettingsStore } from '@/store/useSettingsStore';
 
 interface HistoryDetailModalProps {
     open: boolean;
@@ -13,8 +12,7 @@ interface HistoryDetailModalProps {
 
 export function HistoryDetailModal({ open, onOpenChange, record }: HistoryDetailModalProps) {
     if (!record) return null;
-    const { jiraUrl: settingsJiraUrl } = useSettingsStore();
-    const baseUrl = (record.jiraUrl || settingsJiraUrl || '').replace(/\/+$/, '');
+    const baseUrl = (record.jiraUrl || import.meta.env.VITE_JIRA_URL || '').replace(/\/+$/, '');
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
