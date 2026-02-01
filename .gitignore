@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 .env
+
+# local dev pid files
+.frontend.pid
+.server.pid
+
