@@ -69,6 +69,22 @@ export const jiraService = {
         } catch {
             return false;
         }
+    },
+
+    async updateIssue(key: string, payload: { summary?: string; description?: string }): Promise<void> {
+        if (!key) throw new Error('Jira key is required');
+        const res = await fetch(`${API_BASE}/api/jira/issue/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ key, ...payload }),
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Jira update failed (${res.status}): ${text}`);
+        }
     }
 };
 

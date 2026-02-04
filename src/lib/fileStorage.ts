@@ -31,3 +31,25 @@ export function pickJsonFile(): Promise<unknown> {
         input.click();
     });
 }
+
+export function pickCsvFile(): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv,text/csv';
+        input.onchange = async () => {
+            const file = input.files?.[0];
+            if (!file) {
+                reject(new Error('No file selected'));
+                return;
+            }
+            try {
+                const text = await file.text();
+                resolve(text);
+            } catch (err) {
+                reject(err);
+            }
+        };
+        input.click();
+    });
+}

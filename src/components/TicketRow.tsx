@@ -15,6 +15,7 @@ interface TicketRowProps {
     index: number;
     onAddSubtask?: () => void;
     onOpenUsers?: () => void;
+    onDescriptionTab?: (index: number) => void;
 }
 
 const COLUMN_FIELDS: Array<keyof TicketRowType> = [
@@ -28,7 +29,7 @@ const COLUMN_FIELDS: Array<keyof TicketRowType> = [
     'parentKey',
 ];
 
-export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: TicketRowProps) {
+export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask, onDescriptionTab }: TicketRowProps) {
     const { updateRow, copyRow, toggleSelect, ensureRowCount } = useTicketStore();
     const { users } = useSettingsStore() as any;
 
@@ -122,6 +123,7 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
                     value={row.summary}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('summary', e.target.value)}
                     onPaste={handlePaste('summary')}
+                    data-summary-index={index}
                     className={cn(
                         "h-full border-0 focus-visible:ring-0 rounded-none bg-transparent",
                         isChildTask && "pl-6"
@@ -136,6 +138,12 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask }: T
                     value={row.description}
                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
                     onPaste={handlePaste('description')}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Tab' && !e.shiftKey) {
+                            e.preventDefault();
+                            onDescriptionTab?.(index);
+                        }
+                    }}
                     className="h-full min-h-[40px] border-0 focus-visible:ring-0 rounded-none bg-transparent resize-none py-2 leading-tight"
                     placeholder="Description"
                 />

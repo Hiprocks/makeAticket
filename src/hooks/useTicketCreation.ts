@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTicketStore } from '@/store/useTicketStore';
 import { useHistoryStore } from '@/store/useHistoryStore';
+import { useEditStore } from '@/store/useEditStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { jiraService } from '@/services/jiraService';
 import type { CreationRecord, CreatedTicket } from '@/types';
@@ -9,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 export function useTicketCreation() {
     const { rows, clearRows } = useTicketStore();
     const { addRecord } = useHistoryStore();
+    const { addFromCreatedTickets } = useEditStore();
     const { projectKey, users } = useSettingsStore();
     const jiraUrl = import.meta.env.VITE_JIRA_URL || '';
 
@@ -97,6 +99,7 @@ export function useTicketCreation() {
                 tickets: createdTickets
             };
             addRecord(record);
+            addFromCreatedTickets(record.tickets);
             setResult(record);
             if (failCount === 0 && successDate > 0) {
                 clearRows();
@@ -175,6 +178,7 @@ export function useTicketCreation() {
                 tickets: createdTickets
             };
             addRecord(record);
+            addFromCreatedTickets(record.tickets);
             setResult(record);
             if (record.failCount === 0 && record.successCount > 0) {
                 clearRows();

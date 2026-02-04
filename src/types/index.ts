@@ -62,3 +62,37 @@ export interface CreatedTicket {
     status: 'success' | 'failed';
     errorMessage: string | null;
 }
+
+export interface EditRow {
+    id: string;
+    key: string;
+    type: string;
+    status?: string;
+    sprint?: string;
+    assignee?: string;
+    startDate?: string;
+    dueDate?: string;
+    parentKey?: string;
+    summary: string;
+    description: string;
+    originalSummary: string;
+    originalDescription: string;
+    selected: boolean;
+}
+
+export interface EditedTicket {
+    rowId: string;
+    jiraKey: string;
+    summary: string;
+    description: string;
+    status: 'success' | 'failed';
+    errorMessage: string | null;
+}
+
+export interface EditRecord {
+    id: string;
+    updatedAt: string;
+    successCount: number;
+    failCount: number;
+    tickets: EditedTicket[];
+}

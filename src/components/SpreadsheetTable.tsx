@@ -20,7 +20,7 @@ export function SpreadsheetTable() {
     const [usersModalOpen, setUsersModalOpen] = useState(false);
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
-    const { startCreation, startCreationDebug, isCreating, progress, result, resetCreation } = useTicketCreation();
+    const { startCreation, isCreating, progress, result, resetCreation } = useTicketCreation();
 
     // Auto-open result modal when creation starts or ends
     useEffect(() => {
@@ -37,11 +37,6 @@ export function SpreadsheetTable() {
     const handleConfirmCreation = () => {
         setPreviewModalOpen(false);
         startCreation();
-    };
-
-    const handleDebugConfirmCreation = () => {
-        setPreviewModalOpen(false);
-        startCreationDebug();
     };
 
     const validateBeforeCreate = () => {
@@ -74,6 +69,26 @@ export function SpreadsheetTable() {
         setSubtaskModalOpen(true);
     };
 
+    const focusSummaryAt = (targetIndex: number) => {
+        const target = document.querySelector<HTMLInputElement>(
+            `input[data-summary-index="${targetIndex}"]`
+        );
+        if (target) {
+            target.focus();
+            target.select();
+        }
+    };
+
+    const handleDescriptionTab = (rowIndex: number) => {
+        const nextIndex = rowIndex + 1;
+        if (nextIndex < rows.length) {
+            focusSummaryAt(nextIndex);
+            return;
+        }
+        addRow(rowIndex);
+        requestAnimationFrame(() => focusSummaryAt(nextIndex));
+    };
+
     // Paste is handled per-cell to support multi-row/column pastes.
 
     return (
@@ -89,7 +104,6 @@ export function SpreadsheetTable() {
                 onOpenChange={setPreviewModalOpen}
                 rows={rows}
                 onConfirm={handleConfirmCreation}
-                onDebugConfirm={handleDebugConfirmCreation}
             />
 
             <ResultModal
@@ -148,6 +162,7 @@ export function SpreadsheetTable() {
                         index={index}
                         onAddSubtask={() => handleAddSubtask(row)}
                         onOpenUsers={() => setUsersModalOpen(true)}
+                        onDescriptionTab={handleDescriptionTab}
                     />
                 ))}
 
@@ -170,20 +185,12 @@ export function SpreadsheetTable() {
                 </Button>
                 <div className="flex gap-2">
                     <Button
-                        variant="outline"
+                        className="bg-blue-600 text-white hover:bg-blue-700"
                         onClick={() => {
                             if (validateBeforeCreate()) setPreviewModalOpen(true);
                         }}
                     >
-                        Preview
-                    </Button>
-                    <Button
-                        className="bg-primary text-white hover:bg-primary/90"
-                        onClick={() => {
-                            if (validateBeforeCreate()) setPreviewModalOpen(true);
-                        }}
-                    >
-                        <Play className="w-4 h-4 mr-2" /> Start creation
+                        <Play className="w-4 h-4 mr-2" /> Create
                     </Button>
                 </div>
             </div>

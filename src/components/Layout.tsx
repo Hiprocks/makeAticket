@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingsModal } from './SettingsModal';
 import { SpreadsheetTable } from './SpreadsheetTable';
 import { HistoryTable } from './HistoryTable';
+import { EditTable } from './EditTable';
 
 export function Layout() {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -18,12 +19,17 @@ export function Layout() {
                     <div className="flex items-center justify-between mb-4">
                         <TabsList>
                             <TabsTrigger value="create">Create</TabsTrigger>
+                            <TabsTrigger value="edit">Edit</TabsTrigger>
                             <TabsTrigger value="history">History</TabsTrigger>
                         </TabsList>
                     </div>
 
                     <TabsContent value="create" className="flex-1 border rounded-lg bg-background shadow-sm p-0 overflow-hidden flex flex-col">
                         <SpreadsheetTable />
+                    </TabsContent>
+
+                    <TabsContent value="edit" className="flex-1 border rounded-lg bg-background shadow-sm p-0 overflow-hidden flex flex-col">
+                        <EditTable />
                     </TabsContent>
 
                     <TabsContent value="history" className="flex-1 border rounded-lg bg-background shadow-sm p-0 overflow-hidden flex flex-col">

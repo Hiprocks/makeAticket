@@ -8,10 +8,9 @@ interface PreviewModalProps {
     onOpenChange: (open: boolean) => void;
     rows: TicketRow[];
     onConfirm: () => void;
-    onDebugConfirm: () => void;
 }
 
-export function PreviewModal({ open, onOpenChange, rows, onConfirm, onDebugConfirm }: PreviewModalProps) {
+export function PreviewModal({ open, onOpenChange, rows, onConfirm }: PreviewModalProps) {
     const selectedRows = rows.filter(r => r.selected);
     const epicCount = selectedRows.filter(r => r.type === 'Epic').length;
     const taskCount = selectedRows.filter(r => r.type === 'Task').length;
@@ -77,10 +76,7 @@ export function PreviewModal({ open, onOpenChange, rows, onConfirm, onDebugConfi
 
                 <DialogFooter className="mt-4">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Back</Button>
-                    <Button variant="outline" onClick={onDebugConfirm} disabled={hasErrors}>
-                        Debug Confirm
-                    </Button>
-                    <Button onClick={onConfirm} disabled={hasErrors}>Confirm</Button>
+                    <Button onClick={onConfirm} disabled={hasErrors}>Create</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

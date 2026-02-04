@@ -64,6 +64,32 @@ app.post('/api/jira/issue', async (req, res) => {
   }
 });
 
+app.post('/api/jira/issue/update', async (req, res) => {
+  try {
+    const { key, summary, description } = req.body || {};
+    if (!key) {
+      return res.status(400).json({ error: 'key is required' });
+    }
+    if (summary === undefined && description === undefined) {
+      return res.status(400).json({ error: 'summary or description is required' });
+    }
+
+    const jiraUrl = requiredEnv('JIRA_URL');
+    const email = requiredEnv('JIRA_EMAIL');
+    const apiToken = requiredEnv('JIRA_API_TOKEN');
+
+    const fields = {};
+    if (summary !== undefined) fields.summary = summary;
+    if (description !== undefined) fields.description = description ? toAdf(description) : null;
+
+    await updateIssue({ jiraUrl, email, apiToken, key, fields });
+    res.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Jira proxy listening on http://localhost:${port}`);
 });
@@ -161,6 +187,23 @@ function toAdf(text) {
     return { type: 'paragraph', content: [{ type: 'text', text: line }] };
   });
   return { type: 'doc', version: 1, content };
+}
+
+async function updateIssue({ jiraUrl, email, apiToken, key, fields }) {
+  const baseUrl = jiraUrl.replace(/\/+$/, '');
+  const res = await fetch(`${baseUrl}/rest/api/3/issue/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${encodeBasic(email, apiToken)}`,
+    },
+    body: JSON.stringify({ fields }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Jira update failed (${res.status}): ${text}`);
+  }
 }
 
 function cleanFields(fields) {
