@@ -565,3 +565,4 @@ App
 
 ## Todo
 - Edit에서 모든 필드 편집 가능
+- 자동 저장 기능 정의 및 개발 (create/update/import 등 최신 상태 저장 방식)

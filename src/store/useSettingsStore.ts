@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Settings, JiraUser, JiraSprint } from '@/types';
+import { getPersistStorage } from '@/lib/indexedDbStorage';
 
 interface SettingsState extends Settings {
     users: JiraUser[];
@@ -35,6 +36,7 @@ export const useSettingsStore = create<SettingsState>()(
         }),
         {
             name: 'jbc-settings',
+            storage: createJSONStorage(() => getPersistStorage()),
         }
     )
 );

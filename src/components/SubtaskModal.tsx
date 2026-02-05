@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,11 +24,12 @@ export function SubtaskModal({ open, onOpenChange, parentRow }: SubtaskModalProp
     const { addSubtasks } = useTicketStore();
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
-    useEffect(() => {
-        if (open) {
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
             setSelectedTypes(lastSubtaskTypes.length > 0 ? lastSubtaskTypes : []);
         }
-    }, [open, lastSubtaskTypes]);
+        onOpenChange(nextOpen);
+    };
 
     const handleToggle = (type: string) => {
         setSelectedTypes(prev =>
@@ -47,7 +48,7 @@ export function SubtaskModal({ open, onOpenChange, parentRow }: SubtaskModalProp
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>하위 일감 추가</DialogTitle>

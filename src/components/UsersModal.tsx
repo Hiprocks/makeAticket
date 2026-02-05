@@ -1,4 +1,4 @@
-import { useEffect, useState, type ClipboardEvent } from 'react';
+import { useState, type ClipboardEvent } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +17,13 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
     const [draft, setDraft] = useState<JiraUser[]>([]);
     const [warning, setWarning] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (open) {
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
             setDraft(users.length > 0 ? users : []);
             setWarning(null);
         }
-    }, [open, users]);
+        onOpenChange(nextOpen);
+    };
 
     const handleChange = (index: number, field: keyof JiraUser, value: string) => {
         setDraft(prev => prev.map((u, i) => (i === index ? { ...u, [field]: value } : u)));
@@ -90,7 +91,7 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>User Management</DialogTitle>
@@ -113,16 +114,23 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
                                 onClick={async () => {
                                     try {
                                         const data = await pickJsonFile();
-                                        const imported = Array.isArray((data as any)?.users) ? (data as any).users : data;
-                                        if (Array.isArray(imported)) {
-                                            setDraft(imported.map(u => ({
-                                                accountId: String((u as any).accountId ?? ''),
-                                                displayName: String((u as any).displayName ?? ''),
-                                                emailAddress: ''
-                                            })));
-                                        }
-                                    } catch (err: any) {
-                                        alert(`Import failed: ${err.message || err}`);
+                                        const imported =
+                                            typeof data === 'object' && data !== null && 'users' in data && Array.isArray((data as { users: unknown[] }).users)
+                                                ? (data as { users: unknown[] }).users
+                                                : Array.isArray(data)
+                                                    ? data
+                                                    : [];
+                                        setDraft(imported.map((u) => {
+                                            const obj = typeof u === 'object' && u !== null ? (u as Record<string, unknown>) : {};
+                                            return {
+                                                accountId: String(obj.accountId ?? ''),
+                                                displayName: String(obj.displayName ?? ''),
+                                                emailAddress: '',
+                                            };
+                                        }));
+                                    } catch (err: unknown) {
+                                        const message = err instanceof Error ? err.message : String(err);
+                                        alert(`Import failed: ${message}`);
                                     }
                                 }}
                             >

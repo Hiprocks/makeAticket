@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CreatedTicket, EditRow } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getPersistStorage } from '@/lib/indexedDbStorage';
 
 interface EditStore {
     rows: EditRow[];
@@ -73,6 +74,7 @@ export const useEditStore = create<EditStore>()(
         }),
         {
             name: 'edit-storage',
+            storage: createJSONStorage(() => getPersistStorage()),
         }
     )
 );

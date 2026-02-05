@@ -31,13 +31,13 @@ const COLUMN_FIELDS: Array<keyof TicketRowType> = [
 
 export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask, onDescriptionTab }: TicketRowProps) {
     const { updateRow, copyRow, toggleSelect, ensureRowCount } = useTicketStore();
-    const { users } = useSettingsStore() as any;
+    const { users } = useSettingsStore();
 
     // Grid layout matching the header
     const gridClass = "grid grid-cols-[40px_100px_1fr_1fr_120px_100px_120px_120px_120px_80px] gap-0 border-b hover:bg-slate-50 transition-colors group items-stretch";
 
-    const handleChange = (field: keyof TicketRowType, value: any) => {
-        updateRow(row.id, { [field]: value });
+    const handleChange = <K extends keyof TicketRowType>(field: K, value: TicketRowType[K]) => {
+        updateRow(row.id, { [field]: value } as Partial<TicketRowType>);
     };
 
     const handlePaste = (field: keyof TicketRowType) => (e: ClipboardEvent) => {
@@ -160,7 +160,7 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask, onD
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="none">Unassigned</SelectItem>
-                        {users?.map((user: any) => (
+                        {users?.map((user) => (
                             <SelectItem key={user.accountId} value={user.accountId}>
                                 {user.displayName}
                             </SelectItem>

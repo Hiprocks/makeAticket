@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { TicketRow as TicketRowType } from '@/types';
 import { TicketRow } from './TicketRow';
 import { useTicketStore } from '@/store/useTicketStore';
@@ -15,22 +15,13 @@ export function SpreadsheetTable() {
     const { rows, addRow, deleteRows, replaceRowsFromImport } = useTicketStore();
     const [subtaskModalOpen, setSubtaskModalOpen] = useState(false);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
-    const [resultModalOpen, setResultModalOpen] = useState(false);
     const [activeParentRow, setActiveParentRow] = useState<TicketRowType | null>(null);
     const [usersModalOpen, setUsersModalOpen] = useState(false);
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
     const { startCreation, isCreating, progress, result, resetCreation } = useTicketCreation();
 
-    // Auto-open result modal when creation starts or ends
-    useEffect(() => {
-        if (isCreating || result) {
-            setResultModalOpen(true);
-        }
-    }, [isCreating, result]);
-
     const handleCloseResult = () => {
-        setResultModalOpen(false);
         resetCreation();
     };
 
@@ -57,10 +48,16 @@ export function SpreadsheetTable() {
     const handleImportDraft = async () => {
         try {
             const data = await pickJsonFile();
-            const imported = Array.isArray((data as any)?.rows) ? (data as any).rows : data;
+            const imported =
+                typeof data === 'object' && data !== null && 'rows' in data && Array.isArray((data as { rows: unknown[] }).rows)
+                    ? (data as { rows: unknown[] }).rows
+                    : Array.isArray(data)
+                        ? data
+                        : [];
             replaceRowsFromImport(Array.isArray(imported) ? imported : []);
-        } catch (err: any) {
-            alert(`Import failed: ${err.message || err}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Import failed: ${message}`);
         }
     };
 
@@ -107,8 +104,10 @@ export function SpreadsheetTable() {
             />
 
             <ResultModal
-                open={resultModalOpen}
-                onOpenChange={setResultModalOpen}
+                open={isCreating || !!result}
+                onOpenChange={(open) => {
+                    if (!open) handleCloseResult();
+                }}
                 isCreating={isCreating}
                 progress={progress}
                 result={result}

@@ -34,10 +34,16 @@ export function HistoryTable() {
                         onClick={async () => {
                             try {
                                 const data = await pickJsonFile();
-                                const imported = Array.isArray((data as any)?.records) ? (data as any).records : data;
+                                const imported =
+                                    typeof data === 'object' && data !== null && 'records' in data && Array.isArray((data as { records: unknown[] }).records)
+                                        ? (data as { records: unknown[] }).records
+                                        : Array.isArray(data)
+                                            ? data
+                                            : [];
                                 replaceRecordsFromImport(Array.isArray(imported) ? imported : []);
-                            } catch (err: any) {
-                                alert(`Import failed: ${err.message || err}`);
+                            } catch (err: unknown) {
+                                const message = err instanceof Error ? err.message : String(err);
+                                alert(`Import failed: ${message}`);
                             }
                         }}
                     >

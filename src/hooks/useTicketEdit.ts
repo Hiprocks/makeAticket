@@ -45,14 +45,15 @@ export function useTicketEdit() {
                         errorMessage: null
                     });
                     successCount++;
-                } catch (error: any) {
+                } catch (error: unknown) {
+                    const message = error instanceof Error ? error.message : 'Unknown error';
                     updatedTickets.push({
                         rowId: row.id,
                         jiraKey: row.key,
                         summary: row.summary,
                         description: row.description,
                         status: 'failed',
-                        errorMessage: error.message || 'Unknown error'
+                        errorMessage: message
                     });
                     failCount++;
                 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CreationRecord } from '@/types';
+import { getPersistStorage } from '@/lib/indexedDbStorage';
 
 interface HistoryStore {
     records: CreationRecord[];
@@ -23,6 +24,7 @@ export const useHistoryStore = create<HistoryStore>()(
         }),
         {
             name: 'history-storage',
+            storage: createJSONStorage(() => getPersistStorage()),
         }
     )
 );

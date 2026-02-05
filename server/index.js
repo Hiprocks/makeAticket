@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 dotenv.config();
 
@@ -9,7 +11,7 @@ const port = Number(process.env.API_PORT || 5174);
 const allowedOrigin = process.env.APP_ORIGIN || 'http://localhost:5173';
 
 app.use(cors({ origin: allowedOrigin, credentials: true }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
 
 const metaCache = new Map();
 const META_TTL_MS = 10 * 60 * 1000;
@@ -84,6 +86,36 @@ app.post('/api/jira/issue/update', async (req, res) => {
 
     await updateIssue({ jiraUrl, email, apiToken, key, fields });
     res.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
+app.post('/api/storage/snapshot', async (req, res) => {
+  try {
+    const { projectKey, kind, payload } = req.body || {};
+    const safeProjectKey = sanitizeName(projectKey || 'default') || 'default';
+    const safeKind = sanitizeName(kind || 'snapshot') || 'snapshot';
+
+    const storageRoot = getStorageRoot();
+    await fs.mkdir(storageRoot, { recursive: true });
+
+    const projectDir = path.join(storageRoot, safeProjectKey);
+    await fs.mkdir(projectDir, { recursive: true });
+
+    const fileName = `${formatTimestamp(new Date())}_${safeKind}.json`;
+    const filePath = path.join(projectDir, fileName);
+
+    const data = {
+      savedAt: new Date().toISOString(),
+      projectKey: projectKey || 'default',
+      kind: kind || 'snapshot',
+      payload: payload ?? null,
+    };
+
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+    res.json({ ok: true, path: filePath });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ error: message });
@@ -187,6 +219,31 @@ function toAdf(text) {
     return { type: 'paragraph', content: [{ type: 'text', text: line }] };
   });
   return { type: 'doc', version: 1, content };
+}
+
+function getStorageRoot() {
+  return process.env.STORAGE_DIR || path.resolve(process.cwd(), 'storage');
+}
+
+function sanitizeName(value) {
+  return String(value || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function formatTimestamp(date) {
+  const pad = (n, size = 2) => String(n).padStart(size, '0');
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('') + '_' + [
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+    pad(date.getMilliseconds(), 3),
+  ].join('');
 }
 
 async function updateIssue({ jiraUrl, email, apiToken, key, fields }) {

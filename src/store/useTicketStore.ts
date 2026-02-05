@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { TicketRow } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getPersistStorage } from '@/lib/indexedDbStorage';
 
 interface TicketState {
     rows: TicketRow[];
@@ -124,6 +125,7 @@ export const useTicketStore = create<TicketState>()(
         }),
         {
             name: 'jbc-draft',
+            storage: createJSONStorage(() => getPersistStorage()),
         }
     )
 );

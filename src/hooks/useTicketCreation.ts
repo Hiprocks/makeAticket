@@ -71,8 +71,9 @@ export function useTicketCreation() {
                         errorMessage: null
                     });
                     successDate++;
-                } catch (error: any) {
+                } catch (error: unknown) {
                     console.error('Creation failed', error);
+                    const message = error instanceof Error ? error.message : 'Unknown error';
                     failCount++;
                     createdTickets.push({
                         rowId: row.id,
@@ -82,7 +83,7 @@ export function useTicketCreation() {
                         parentKey: row.parentKey,
                         jiraKey: null,
                         status: 'failed',
-                        errorMessage: error.message || 'Unknown error'
+                        errorMessage: message
                     });
                 }
             }
