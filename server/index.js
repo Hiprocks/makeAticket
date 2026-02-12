@@ -92,6 +92,54 @@ app.post('/api/jira/issue/update', async (req, res) => {
   }
 });
 
+app.get('/api/confluence/page/:pageId', async (req, res) => {
+  try {
+    const { pageId } = req.params;
+    if (!pageId) {
+      return res.status(400).json({ error: 'pageId is required' });
+    }
+
+    const confluenceUrl = process.env.CONFLUENCE_URL || requiredEnv('JIRA_URL') + '/wiki';
+    const email = process.env.CONFLUENCE_EMAIL || requiredEnv('JIRA_EMAIL');
+    const apiToken = process.env.CONFLUENCE_API_TOKEN || requiredEnv('JIRA_API_TOKEN');
+
+    const pageData = await getConfluencePage({ confluenceUrl, email, apiToken, pageId });
+    res.json(pageData);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
+app.get('/api/confluence/test', async (req, res) => {
+  try {
+    const confluenceUrl = process.env.CONFLUENCE_URL || requiredEnv('JIRA_URL') + '/wiki';
+    const email = process.env.CONFLUENCE_EMAIL || requiredEnv('JIRA_EMAIL');
+    const apiToken = process.env.CONFLUENCE_API_TOKEN || requiredEnv('JIRA_API_TOKEN');
+    const baseUrl = confluenceUrl.replace(/\/+$/, '');
+
+    // Test if we can access Confluence at all
+    const testUrl = `${baseUrl}/rest/api/space`;
+    const testRes = await fetch(testUrl, {
+      headers: {
+        'Authorization': `Basic ${encodeBasic(email, apiToken)}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    res.json({
+      ok: testRes.ok,
+      status: testRes.status,
+      url: testUrl,
+      email: email,
+      body: testRes.ok ? await testRes.json() : await testRes.text(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
 app.post('/api/storage/snapshot', async (req, res) => {
   try {
     const { projectKey, kind, payload } = req.body || {};
@@ -261,6 +309,47 @@ async function updateIssue({ jiraUrl, email, apiToken, key, fields }) {
     const text = await res.text();
     throw new Error(`Jira update failed (${res.status}): ${text}`);
   }
+}
+
+async function getConfluencePage({ confluenceUrl, email, apiToken, pageId }) {
+  const baseUrl = confluenceUrl.replace(/\/+$/, '');
+
+  // Confluence REST API v1 (more widely supported)
+  const url = new URL(`${baseUrl}/rest/api/content/${encodeURIComponent(pageId)}`);
+  url.searchParams.set('expand', 'body.storage,version,space');
+
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Basic ${encodeBasic(email, apiToken)}`,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Confluence fetch failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+
+  return {
+    id: data.id,
+    title: data.title,
+    type: data.type,
+    status: data.status,
+    body: data.body?.storage?.value || '',
+    space: {
+      id: data.space?.id,
+      key: data.space?.key,
+      name: data.space?.name,
+    },
+    version: {
+      number: data.version?.number,
+      when: data.version?.when,
+      by: data.version?.by?.displayName,
+    },
+    _links: data._links,
+  };
 }
 
 function cleanFields(fields) {
