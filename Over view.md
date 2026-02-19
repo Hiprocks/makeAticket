@@ -23,11 +23,12 @@
 
 | 구분 | 기술 | 비고 |
 |------|------|------|
-| **프레임워크** | React 18 + TypeScript | Vite 사용 |
-| **스타일링** | Tailwind CSS | |
+| **프레임워크** | React 19 + TypeScript | Vite 사용 |
+| **스타일링** | Tailwind CSS v4 | |
 | **UI 컴포넌트** | Shadcn/ui | 테이블, 모달, 버튼, 체크박스 등 |
-| **상태관리** | Zustand | |
-| **데이터 저장** | LocalStorage | 설정, 기록 저장 |
+| **상태관리** | Zustand | Persist middleware 사용 |
+| **데이터 저장** | IndexedDB | 설정, 기록 저장 (LocalStorage → IndexedDB 마이그레이션) |
+| **백엔드** | Express.js (Node.js) | Jira API Proxy Server |
 | **배포** | Vercel | |
 
 ---
@@ -38,7 +39,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ [Jira Bulk Creator]                              [⚙ 설정]  │
 ├─────────────────────────────────────────────────────────────┤
-│  [생성]  [기록]                    ← 네비게이션 탭          │
+│  [Create]  [Edit]  [History]       ← 네비게이션 탭          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │                    탭별 컨텐츠 영역                          │
@@ -49,7 +50,7 @@
 | 요소 | 설명 |
 |------|------|
 | **헤더** | 좌측 로고/타이틀, 우측 설정 버튼 |
-| **네비게이션** | 2개 탭 (생성, 기록) |
+| **네비게이션** | 3개 탭 (Create, Edit, History) |
 | **컨텐츠** | 탭에 따라 변경 |
 
 ---
@@ -563,6 +564,60 @@ App
 
 ---
 
-## Todo
-- Edit에서 모든 필드 편집 가능
-- 자동 저장 기능 정의 및 개발 (create/update/import 등 최신 상태 저장 방식)
+## 14. 현재 구현 상태 (Implementation Status)
+
+> **🤖 자동 업데이트**: 이 섹션은 Claude Code가 기능 완료 시 자동으로 업데이트합니다.
+> - 기능 구현 완료 → `[ ]`를 `[x]`로 변경
+> - 새로운 기능 추가 → 해당 카테고리에 항목 추가
+
+### ✅ 완료된 기능
+
+#### Create 탭
+- [x] 기본 스프레드시트 테이블 UI
+- [x] 티켓 행 추가/삭제/수정
+- [x] Epic/Task 유형 선택
+- [x] 하위 일감 추가 모달 (13종 유형)
+- [x] 티켓 생성 프로세스 (Epic → Task 순서)
+- [x] 진행률 표시 모달
+- [x] 생성 결과 모달
+- [x] CSV 내보내기
+- [x] JSON 가져오기/내보내기
+- [x] IndexedDB 자동 저장
+
+#### Edit 탭
+- [x] CSV 가져오기 (Jira export)
+- [x] 제목/설명 편집 UI
+- [x] 변경 사항 추적 (original vs current)
+- [x] Sprint별 필터링
+- [x] 검색 기능
+- [x] 정렬 기능
+- [x] 선택 항목 일괄 업데이트
+- [x] 미리보기 모달
+- [x] 업데이트 진행률 표시
+- [x] 결과 모달
+
+#### History 탭
+- [x] 생성 기록 목록 표시
+- [x] 기록 상세 모달
+- [x] 기록 삭제 기능
+
+#### Settings 모달
+- [x] Jira 연결 설정 (URL, Email, API Token, Project Key)
+- [x] 연결 테스트 기능
+- [x] 사용자 목록 캐싱
+- [x] Sprint 목록 캐싱
+
+#### Backend (Express Server)
+- [x] Jira API Proxy (`/api/jira/issue`)
+- [x] Jira 업데이트 API (`/api/jira/issue/update`)
+- [x] Confluence API 연동 (`/api/confluence/page/:pageId`)
+- [x] 스냅샷 저장 기능 (`/api/storage/snapshot`)
+- [x] Epic Name/Link 필드 자동 감지
+
+#### 데이터 관리
+- [x] IndexedDB 저장소 구현
+- [x] Zustand Persist 미들웨어 통합
+- [x] 자동 저장 (Create/Edit 탭)
+
+### 📋 할 일 (Todo)
+자세한 내용은 [Todo.md](./Todo.md) 참조
