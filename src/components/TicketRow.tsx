@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Copy, Plus } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface TicketRowProps {
     row: TicketRowType;
@@ -42,18 +43,30 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask, onD
 
     const handlePaste = (field: keyof TicketRowType) => (e: ClipboardEvent) => {
         const text = e.clipboardData?.getData('text/plain');
-        if (!text) return;
+        if (!text) {
+            toast.error('❌ 붙여넣기 실패: 클립보드 데이터 없음');
+            return;
+        }
 
         const startCol = COLUMN_FIELDS.indexOf(field);
-        if (startCol === -1) return;
+        if (startCol === -1) {
+            toast.error('❌ 붙여넣기 실패: 잘못된 필드');
+            return;
+        }
 
         e.preventDefault();
 
         const grid = parseClipboard(text);
-        if (grid.length === 0) return;
+        if (grid.length === 0) {
+            toast.error('❌ 붙여넣기 실패: 데이터 형식 오류');
+            return;
+        }
 
         ensureRowCount(index + grid.length);
         const updatedRows = useTicketStore.getState().rows;
+
+        let totalCells = 0;
+        let emptyCells = 0;
 
         grid.forEach((rowCells, rowOffset) => {
             const targetRow = updatedRows[index + rowOffset];
@@ -63,7 +76,13 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask, onD
                 const fieldKey = COLUMN_FIELDS[startCol + colOffset];
                 if (!fieldKey) return;
 
-                const value = cell;
+                totalCells++;
+                const value = cell.trim();
+
+                if (!value) {
+                    emptyCells++;
+                }
+
                 if (fieldKey === 'type') {
                     const lower = value.toLowerCase();
                     if (lower.startsWith('e')) {
@@ -82,6 +101,13 @@ export const TicketRow = memo(function TicketRow({ row, index, onAddSubtask, onD
                 updateRow(targetRow.id, { [fieldKey]: value });
             });
         });
+
+        // Toast 알림
+        if (emptyCells > 0) {
+            toast.warning(`⚠️ ${grid.length}행 붙여넣기 완료 (${emptyCells}개 필드 누락)`);
+        } else {
+            toast.success(`✅ ${grid.length}행 붙여넣기 완료`);
+        }
     };
 
     const isChildTask = row.type === 'Task' && !!row.parentRowId;

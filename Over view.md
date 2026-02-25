@@ -583,6 +583,14 @@ App
 - [x] CSV 내보내기
 - [x] JSON 가져오기/내보내기
 - [x] IndexedDB 자동 저장
+- [x] 복사-붙여넣기 기능 (Enhanced - 85% complete)
+  - ✅ Excel/Google Sheets/Confluence 표 지원
+  - ✅ 다중 행/열 붙여넣기
+  - ✅ 자동 행 추가
+  - ✅ 유형 자동 감지 (Epic/Task)
+  - ✅ 날짜 정규화
+  - ✅ Toast 알림 (성공/경고/실패)
+  - ⚠️ 담당자/Sprint 수동 선택 필요 (자동 매핑 미지원)
 
 #### Edit 탭
 - [x] CSV 가져오기 (Jira export)
