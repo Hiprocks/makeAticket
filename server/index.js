@@ -2,9 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fs from 'node:fs/promises';
-import path from 'node:path';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+// ESM에서 __dirname 사용을 위한 설정
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// server/.env 파일 명시적 로드
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const port = Number(process.env.API_PORT || 5174);
