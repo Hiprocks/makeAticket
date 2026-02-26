@@ -99,9 +99,26 @@ app.get('/api/confluence/page/:pageId', async (req, res) => {
       return res.status(400).json({ error: 'pageId is required' });
     }
 
-    const confluenceUrl = process.env.CONFLUENCE_URL || requiredEnv('JIRA_URL') + '/wiki';
-    const email = process.env.CONFLUENCE_EMAIL || requiredEnv('JIRA_EMAIL');
-    const apiToken = process.env.CONFLUENCE_API_TOKEN || requiredEnv('JIRA_API_TOKEN');
+    // Confluence 자격증명 (없으면 Jira 자격증명 fallback)
+    const confluenceUrl = process.env.CONFLUENCE_URL || (process.env.JIRA_URL ? process.env.JIRA_URL + '/wiki' : null);
+    const email = process.env.CONFLUENCE_EMAIL || process.env.JIRA_EMAIL;
+    const apiToken = process.env.CONFLUENCE_API_TOKEN || process.env.JIRA_API_TOKEN;
+
+    if (!confluenceUrl) {
+      return res.status(500).json({
+        error: 'Confluence URL not configured. Set CONFLUENCE_URL or JIRA_URL in .env file.'
+      });
+    }
+    if (!email) {
+      return res.status(500).json({
+        error: 'Confluence email not configured. Set CONFLUENCE_EMAIL or JIRA_EMAIL in .env file.'
+      });
+    }
+    if (!apiToken) {
+      return res.status(500).json({
+        error: 'Confluence API token not configured. Set CONFLUENCE_API_TOKEN or JIRA_API_TOKEN in .env file.'
+      });
+    }
 
     const pageData = await getConfluencePage({ confluenceUrl, email, apiToken, pageId });
     res.json(pageData);
@@ -113,9 +130,22 @@ app.get('/api/confluence/page/:pageId', async (req, res) => {
 
 app.get('/api/confluence/test', async (req, res) => {
   try {
-    const confluenceUrl = process.env.CONFLUENCE_URL || requiredEnv('JIRA_URL') + '/wiki';
-    const email = process.env.CONFLUENCE_EMAIL || requiredEnv('JIRA_EMAIL');
-    const apiToken = process.env.CONFLUENCE_API_TOKEN || requiredEnv('JIRA_API_TOKEN');
+    // Confluence 자격증명 (없으면 Jira 자격증명 fallback)
+    const confluenceUrl = process.env.CONFLUENCE_URL || (process.env.JIRA_URL ? process.env.JIRA_URL + '/wiki' : null);
+    const email = process.env.CONFLUENCE_EMAIL || process.env.JIRA_EMAIL;
+    const apiToken = process.env.CONFLUENCE_API_TOKEN || process.env.JIRA_API_TOKEN;
+
+    if (!confluenceUrl || !email || !apiToken) {
+      return res.status(500).json({
+        error: 'Confluence credentials not configured. Check .env file.',
+        details: {
+          confluenceUrl: !!confluenceUrl,
+          email: !!email,
+          apiToken: !!apiToken,
+        }
+      });
+    }
+
     const baseUrl = confluenceUrl.replace(/\/+$/, '');
 
     // Test if we can access Confluence at all
