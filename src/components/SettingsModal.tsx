@@ -49,10 +49,17 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         {/* Jira Connection Tab */}
                         <TabsContent value="connection" className="space-y-4">
                             <div className="space-y-2">
+                                <Label htmlFor="jiraUrl">Jira URL</Label>
+                                <Input id="jiraUrl" placeholder="https://your-domain.atlassian.net" {...register('jiraUrl')} />
+                                <p className="text-xs text-muted-foreground">
+                                    Jira 도메인 URL (예: https://your-domain.atlassian.net)
+                                </p>
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="projectKey">Project key</Label>
                                 <Input id="projectKey" placeholder="AEGIS" {...register('projectKey')} />
                                 <p className="text-xs text-muted-foreground">
-                                    Jira URL and credentials are read from the server .env.
+                                    API credentials are read from the server .env.
                                 </p>
                             </div>
                         </TabsContent>

@@ -15,6 +15,7 @@ export interface TicketRow {
 export interface Settings {
     // Jira 연결
     projectKey: string;              // AEGIS
+    jiraUrl: string;                 // https://your-domain.atlassian.net
 
     // 기본값
     defaultType: 'Epic' | 'Task';
@@ -95,4 +96,70 @@ export interface EditRecord {
     successCount: number;
     failCount: number;
     tickets: EditedTicket[];
+}
+
+// ============================================
+// DoD Automation Types
+// ============================================
+
+export interface DoDItem {
+    id: string;                  // Unique identifier
+    epicName: string;            // Epic name
+    epicKey?: string;            // Existing Epic key if found
+    summary: string;             // Task summary
+    description: string;         // Task description
+    part: string;                // VFX | Sound | UI | Animation | etc.
+    isBlocker: boolean;          // Whether this blocks the parent Epic
+    rawHtml?: string;            // Original HTML for debugging
+}
+
+export interface DoDExtractionResult {
+    items: DoDItem[];
+    epicCount: number;
+    totalTasks: number;
+    warnings: string[];
+    metadata: {
+        pageTitle: string;
+        extractedAt: string;
+    };
+}
+
+export interface DoDAutomationState {
+    // Step 1: Confluence Input
+    pageUrl: string;
+    pageId: string;
+    pageTitle: string;
+    pageHtml: string;
+
+    // Step 2: DoD Review
+    extractionResult: DoDExtractionResult | null;
+    reviewedItems: DoDItem[];    // User-edited items
+
+    // Step 3: Task Creation
+    creationProgress: {
+        total: number;
+        current: number;
+        status: 'idle' | 'creating' | 'completed' | 'failed';
+    };
+    createdTickets: DoDCreatedTicket[];
+}
+
+export interface DoDCreatedTicket {
+    itemId: string;              // Original DoDItem ID
+    epicKey: string | null;      // Created/found Epic key
+    taskKey: string | null;      // Created Task key
+    status: 'success' | 'failed';
+    errorMessage: string | null;
+}
+
+export interface DoDAutomationRecord {
+    id: string;
+    createdAt: string;
+    pageTitle: string;
+    pageUrl: string;
+    epicCount: number;
+    taskCount: number;
+    successCount: number;
+    failCount: number;
+    tickets: DoDCreatedTicket[];
 }

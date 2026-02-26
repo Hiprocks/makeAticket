@@ -16,6 +16,7 @@ interface SettingsState extends Settings {
 
 const defaultSettings: Settings = {
     projectKey: '',
+    jiraUrl: '',
     defaultType: 'Task',
     defaultSprintId: '',
     users: [],

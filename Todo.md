@@ -10,6 +10,23 @@
 
 ## 우선순위: 높음
 
+### DoD Automation (신규 탭)
+- [x] Phase 1: Confluence 연동 (2일, 2026-02-25 완료)
+  - [x] Confluence API 서비스 (`confluenceService.ts`)
+  - [x] DoD 추출 엔진 (`dodExtractionService.ts`)
+  - [x] UI 컴포넌트 (Step1~3, DoDAutomationTab)
+  - [x] Zustand store (`useDoDStore.ts`)
+  - [x] Badge/Alert UI 컴포넌트 추가
+  - [x] Layout에 "DoD Automation" 탭 추가
+- [ ] Phase 2: Jira 연동 강화 (2-3일)
+  - [ ] 중복 Epic 검색 기능
+  - [ ] Blocker 링크 API 구현
+  - [ ] 재시도 메커니즘
+- [ ] Phase 3: 고급 기능 (2일)
+  - [ ] DoD History 탭 추가
+  - [ ] Epic-Task 관계 시각화
+  - [ ] 배치 처리 최적화
+
 ### Create 탭 개선
 - [x] 복사-붙여넣기 기능 구현 (Excel/Google Sheet/Confluence 표) - **85% 완료** (기본 기능 동작, 개선사항 하단 참조)
 - [x] 복사-붙여넣기 Toast 알림 추가 (Gap 1 - 완료, 2026-02-25)
@@ -74,6 +91,17 @@
 ---
 
 ## 📋 최근 완료 항목 (2026-02-25)
+- ✅ **DoD Automation Phase 1 완료** (2026-02-25)
+  - Confluence 페이지 연동 및 HTML 파싱 (Cheerio)
+  - DoD 항목 자동 추출 (Epic + Task 분리)
+  - 3단계 워크플로 UI (Confluence 입력 → DoD 검토 → 티켓 생성)
+  - Keywords 기반 Part 자동 감지 (VFX, Sound, UI, Animation)
+  - Blocker 설정 및 Epic-Task 연결 기능
+  - 관련 파일:
+    - Services: `confluenceService.ts`, `dodExtractionService.ts`
+    - Components: `DoDAutomationTab.tsx`, `Step1~3*.tsx`
+    - Store: `useDoDStore.ts`
+    - UI: `badge.tsx`, `alert.tsx`
 - ✅ 복사-붙여넣기 Toast 알림 추가 (2026-02-25)
   - Sonner 라이브러리 설치 및 통합
   - 성공 알림: "✅ N행 붙여넣기 완료"

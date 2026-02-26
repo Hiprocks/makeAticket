@@ -5,6 +5,7 @@ import { SettingsModal } from './SettingsModal';
 import { SpreadsheetTable } from './SpreadsheetTable';
 import { HistoryTable } from './HistoryTable';
 import { EditTable } from './EditTable';
+import { DoDAutomationTab } from './DoDAutomation/DoDAutomationTab';
 
 export function Layout() {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -20,6 +21,7 @@ export function Layout() {
                         <TabsList>
                             <TabsTrigger value="create">Create</TabsTrigger>
                             <TabsTrigger value="edit">Edit</TabsTrigger>
+                            <TabsTrigger value="dod">DoD Automation</TabsTrigger>
                             <TabsTrigger value="history">History</TabsTrigger>
                         </TabsList>
                     </div>
@@ -30,6 +32,10 @@ export function Layout() {
 
                     <TabsContent value="edit" className="flex-1 border rounded-lg bg-background shadow-sm p-0 overflow-hidden flex flex-col">
                         <EditTable />
+                    </TabsContent>
+
+                    <TabsContent value="dod" className="flex-1 border rounded-lg bg-background shadow-sm p-0 overflow-hidden flex flex-col">
+                        <DoDAutomationTab />
                     </TabsContent>
 
                     <TabsContent value="history" className="flex-1 border rounded-lg bg-background shadow-sm p-0 overflow-hidden flex flex-col">
