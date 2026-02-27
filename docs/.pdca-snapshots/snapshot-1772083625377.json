@@ -1,0 +1,248 @@
+{
+  "timestamp": "2026-02-26T05:27:05.376Z",
+  "reason": "compaction",
+  "status": {
+    "version": "2.0",
+    "lastUpdated": "2026-02-26T03:47:56.309Z",
+    "activeFeatures": [
+      "복사-붙여넣기 기능 검증",
+      "makeAticket",
+      "store",
+      "DoDAutomation",
+      "ui",
+      "server"
+    ],
+    "primaryFeature": "복사-붙여넣기 기능 검증",
+    "features": {
+      "복사-붙여넣기 기능 검증": {
+        "phase": "act",
+        "phaseNumber": 5,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-25T07:49:33.622Z",
+          "lastUpdated": "2026-02-25T07:49:33.623Z"
+        },
+        "previousPhase": "check",
+        "autoAdvanced": true
+      },
+      "makeAticket": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-25T09:53:03.991Z",
+          "lastUpdated": "2026-02-26T03:19:47.019Z"
+        },
+        "lastFile": "C:\\MyProject\\makeAticket\\src\\components\\SettingsModal.tsx"
+      },
+      "store": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-26T03:16:57.380Z",
+          "lastUpdated": "2026-02-26T03:19:32.722Z"
+        },
+        "lastFile": "C:\\MyProject\\makeAticket\\src\\store\\useSettingsStore.ts"
+      },
+      "DoDAutomation": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-26T03:17:27.673Z",
+          "lastUpdated": "2026-02-26T03:18:45.725Z"
+        },
+        "lastFile": "C:\\MyProject\\makeAticket\\src\\components\\DoDAutomation\\DoDAutomationTab.tsx"
+      },
+      "ui": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-26T03:19:14.960Z",
+          "lastUpdated": "2026-02-26T03:19:19.771Z"
+        },
+        "lastFile": "C:\\MyProject\\makeAticket\\src\\components\\ui\\alert.tsx"
+      },
+      "server": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-26T03:31:58.448Z",
+          "lastUpdated": "2026-02-26T03:47:56.309Z"
+        },
+        "lastFile": "C:\\MyProject\\makeAticket\\server\\index.js"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-02-25T05:26:36.665Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-02-26T03:47:56.309Z"
+    },
+    "history": [
+      {
+        "timestamp": "2026-02-25T07:49:33.623Z",
+        "feature": "복사-붙여넣기 기능 검증",
+        "phase": "act",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-25T09:53:03.991Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-25T09:53:33.835Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-25T09:53:43.841Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:15:50.831Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:16:19.542Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:16:32.565Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:16:57.380Z",
+        "feature": "store",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:17:27.673Z",
+        "feature": "DoDAutomation",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:17:54.068Z",
+        "feature": "DoDAutomation",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:18:38.890Z",
+        "feature": "DoDAutomation",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:18:45.725Z",
+        "feature": "DoDAutomation",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:18:56.261Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:18:58.532Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:19:01.308Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:19:14.960Z",
+        "feature": "ui",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:19:19.771Z",
+        "feature": "ui",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:19:31.600Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:19:32.722Z",
+        "feature": "store",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:19:47.019Z",
+        "feature": "makeAticket",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:31:58.448Z",
+        "feature": "server",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:32:06.000Z",
+        "feature": "server",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-26T03:47:56.309Z",
+        "feature": "server",
+        "phase": "do",
+        "action": "updated"
+      }
+    ]
+  }
+}

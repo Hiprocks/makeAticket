@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-02-25T09:40:31.141Z",
+  "reason": "compaction",
+  "status": {
+    "version": "2.0",
+    "lastUpdated": "2026-02-25T07:49:33.623Z",
+    "activeFeatures": [
+      "복사-붙여넣기 기능 검증"
+    ],
+    "primaryFeature": "복사-붙여넣기 기능 검증",
+    "features": {
+      "복사-붙여넣기 기능 검증": {
+        "phase": "act",
+        "phaseNumber": 5,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-25T07:49:33.622Z",
+          "lastUpdated": "2026-02-25T07:49:33.623Z"
+        },
+        "previousPhase": "check",
+        "autoAdvanced": true
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-02-25T05:26:36.665Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-02-25T07:49:33.623Z"
+    },
+    "history": [
+      {
+        "timestamp": "2026-02-25T07:49:33.623Z",
+        "feature": "복사-붙여넣기 기능 검증",
+        "phase": "act",
+        "action": "updated"
+      }
+    ]
+  }
+}

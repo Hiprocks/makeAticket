@@ -31,8 +31,12 @@ export function Step2_DoDReview() {
     setCurrentStep,
   } = useDoDStore();
 
-  const [expandedParts, setExpandedParts] = useState<Set<string>>(new Set());
-  const [numberInput, setNumberInput] = useState('');
+  // 초기값을 모든 파트로 설정 (모두 열기 상태)
+  const [expandedParts, setExpandedParts] = useState<Set<string>>(() => {
+    if (!extraction) return new Set();
+    const visibleParts = extraction.parts.filter((p) => p.checked || p.detected);
+    return new Set(visibleParts.map(p => p.prefix));
+  });
 
   console.log('📋 [Step2] 렌더링 - extraction:', extraction ? '있음' : '없음');
   if (extraction) {
@@ -63,55 +67,35 @@ export function Step2_DoDReview() {
     });
   };
 
-  const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNumberInput(e.target.value);
+  const handleExpandAll = () => {
+    const visibleParts = extraction?.parts.filter((p) => p.checked || p.detected) || [];
+    setExpandedParts(new Set(visibleParts.map(p => p.prefix)));
+    toast.success('✅ 모두 열기');
   };
 
-  const handleApplyNumberInput = () => {
-    if (!numberInput.trim()) return;
-
-    // Parse input like "1, 3, 5-7" or "1,3,5-7"
-    const parts = numberInput.split(',').map((s) => s.trim());
-    const indices = new Set<number>();
-
-    for (const part of parts) {
-      if (part.includes('-')) {
-        // Range like "5-7"
-        const [start, end] = part.split('-').map((n) => parseInt(n.trim()));
-        if (!isNaN(start) && !isNaN(end)) {
-          for (let i = start; i <= end; i++) {
-            indices.add(i);
-          }
-        }
-      } else {
-        // Single number like "1"
-        const num = parseInt(part);
-        if (!isNaN(num)) {
-          indices.add(num);
-        }
-      }
-    }
-
-    // Map indices to prefixes
-    deselectAllTasks(); // Clear all first
-    indices.forEach((idx) => {
-      if (idx >= 1 && idx <= newTasks.length) {
-        const part = newTasks[idx - 1];
-        toggleTask(part.prefix);
-      }
-    });
-
-    toast.success(`✅ ${indices.size}개 Task 선택 완료`);
+  const handleCollapseAll = () => {
+    setExpandedParts(new Set());
+    toast.success('✅ 모두 닫기');
   };
+
 
   const handleProceed = () => {
-    if (selectedTasks.size === 0) {
+    const actualTaskCount = getActualTaskCount();
+    if (actualTaskCount === 0) {
       toast.error('❌ 생성할 Task를 선택하세요');
       return;
     }
 
     setCurrentStep(3);
-    toast.info('🚀 Step 3: 티켓 생성 단계로 이동합니다...');
+    toast.info(`🚀 Step 3: ${actualTaskCount}개 티켓 생성 단계로 이동합니다...`);
+  };
+
+  // 실제 생성 가능한 Task 수 계산 (Issue #1 수정)
+  const getActualTaskCount = () => {
+    if (!extraction) return 0;
+    return extraction.plannedTasks.filter((task) =>
+      selectedTasks.has(task.prefix)
+    ).length;
   };
 
   const handleBack = () => {
@@ -148,11 +132,25 @@ export function Step2_DoDReview() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Step 2: DoD 검토 및 Task 선택</h2>
-        <p className="text-gray-600">
-          추출된 파트를 검토하고 생성할 Task를 선택하세요. 각 Task의 내용을 펼쳐서 확인할 수 있습니다.
-        </p>
+      {/* Header with Navigation */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Step 2: DoD 검토 및 Task 선택</h2>
+          <p className="text-gray-600">
+            추출된 파트를 검토하고 생성할 Task를 선택하세요.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleBack}>
+            ← 이전 단계
+          </Button>
+          <Button
+            onClick={handleProceed}
+            disabled={getActualTaskCount() === 0}
+          >
+            다음 단계: 티켓 생성 ({getActualTaskCount()}개) →
+          </Button>
+        </div>
       </div>
 
       {/* Summary */}
@@ -171,7 +169,7 @@ export function Step2_DoDReview() {
         </div>
         <div className="border rounded-lg p-4 bg-green-50">
           <p className="text-sm text-gray-600">선택됨</p>
-          <p className="text-2xl font-bold text-green-600">{selectedTasks.size}</p>
+          <p className="text-2xl font-bold text-green-600">{getActualTaskCount()}</p>
         </div>
       </div>
 
@@ -214,41 +212,26 @@ export function Step2_DoDReview() {
         </Alert>
       )}
 
-      {/* Task Selection Controls */}
-      <div className="border rounded-lg p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Task 선택</h3>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={selectAllTasks}>
-              전체 선택
-            </Button>
-            <Button variant="outline" size="sm" onClick={deselectAllTasks}>
-              전체 해제
-            </Button>
-          </div>
-        </div>
-
-        {/* Number Input (FR-10 UI Update) */}
+      {/* Quick Actions */}
+      <div className="flex items-center justify-between border rounded-lg p-4 bg-gray-50">
         <div className="flex gap-2">
-          <div className="flex-1">
-            <Label htmlFor="numberInput">번호로 선택 (예: 1, 3, 5-7) - 생성 예정 티켓만</Label>
-            <Input
-              id="numberInput"
-              type="text"
-              placeholder="1, 3, 5-7"
-              value={numberInput}
-              onChange={handleNumberInputChange}
-            />
-          </div>
-          <Button
-            onClick={handleApplyNumberInput}
-            disabled={!numberInput.trim()}
-            className="mt-6"
-          >
-            적용
+          <Button variant="outline" size="sm" onClick={selectAllTasks}>
+            전체 선택
+          </Button>
+          <Button variant="outline" size="sm" onClick={deselectAllTasks}>
+            전체 해제
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExpandAll}>
+            모두 열기
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCollapseAll}>
+            모두 닫기
           </Button>
         </div>
       </div>
+
 
       {/* 생성 예정 티켓 */}
       {newTasks.length > 0 && (
@@ -269,7 +252,7 @@ export function Step2_DoDReview() {
 
           return (
             <div
-              key={part.prefix}
+              key={`${part.prefix}-${index}`}
               className={`border rounded-lg p-4 ${
                 part.status === 'review' ? 'bg-yellow-50 border-yellow-300' : ''
               }`}
@@ -413,7 +396,7 @@ export function Step2_DoDReview() {
 
             return (
               <div
-                key={part.prefix}
+                key={`existing-${part.prefix}-${index}`}
                 className="border rounded-lg p-4 bg-gray-50"
               >
                 {/* Header */}
@@ -483,17 +466,16 @@ export function Step2_DoDReview() {
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex gap-3">
+      {/* Bottom Actions */}
+      <div className="flex gap-3 justify-end">
         <Button variant="outline" onClick={handleBack}>
-          이전 단계
+          ← 이전 단계
         </Button>
         <Button
           onClick={handleProceed}
-          disabled={selectedTasks.size === 0}
-          className="flex-1"
+          disabled={getActualTaskCount() === 0}
         >
-          다음 단계: 티켓 생성 ({selectedTasks.size}개)
+          다음 단계: 티켓 생성 ({getActualTaskCount()}개) →
         </Button>
       </div>
 

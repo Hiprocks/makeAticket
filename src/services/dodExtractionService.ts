@@ -122,16 +122,37 @@ export interface ExistingTask {
 // ============================================================================
 
 /**
- * 키워드 맵 (FR-3)
+ * 키워드 맵 (FR-3) - 개선: 핵심 키워드와 보조 키워드 분리
  */
-const KEYWORD_MAP: Record<string, string[]> = {
-  'VFX 파트': ['이펙트', 'FX', '파티클', '연출', '비주얼', '화면 효과'],
-  '사운드 파트': ['효과음', '사운드', '음향', '배경음', 'BGM', 'SE'],
-  '애니메이션 파트': ['모션', '애니메이션', '움직임'],
-  'UI 파트': ['UI', 'HUD', '메뉴', '팝업', '버튼', '아이콘', '스트링'],
-  '레벨디자인 파트': ['맵', '거점', '배치', '레벨'],
-  '캐릭터 원화': ['캐릭터', '스킨', '모델', '원화'],
-  '배경 원화': ['배경', '환경', '맵 리소스']
+const KEYWORD_MAP: Record<string, { core: string[]; optional: string[] }> = {
+  'VFX 파트': {
+    core: ['VFX', 'FX', '이펙트', '파티클'],
+    optional: ['연출', '비주얼 효과']
+  },
+  '사운드 파트': {
+    core: ['사운드', '효과음', 'BGM', 'SE'],
+    optional: ['음향', '배경음']
+  },
+  '애니메이션 파트': {
+    core: ['애니메이션', '모션'],
+    optional: ['움직임']
+  },
+  'UI 파트': {
+    core: ['UI', 'HUD'],
+    optional: ['메뉴', '팝업', '버튼', '아이콘', '스트링']
+  },
+  '레벨디자인 파트': {
+    core: ['레벨디자인', '레벨 배치'],
+    optional: ['맵', '거점', '배치']
+  },
+  '캐릭터 원화': {
+    core: ['캐릭터 원화', '캐릭터 2D'],
+    optional: ['캐릭터', '스킨', '원화']
+  },
+  '배경 원화': {
+    core: ['배경 원화', '배경 2D'],
+    optional: ['배경', '환경']
+  }
 };
 
 /**
@@ -168,6 +189,14 @@ export const BLOCKER_RULES: Record<string, string[]> = {
 // ============================================================================
 
 /**
+ * DoD 테이블 파싱 결과
+ */
+interface DoDTableData {
+  partName: string | null; // 파트명 (헤딩에서 추출, 없으면 null)
+  tasks: DoDTask[];
+}
+
+/**
  * FR-2 + FR-3: Confluence HTML 파싱
  *
  * @param html - Confluence Storage Format HTML
@@ -179,29 +208,69 @@ export function parseConfluenceHtml(html: string): ParsedConfluence {
   // 1. 제목 추출
   const title = $('h1').first().text().trim() || '제목 없음';
 
-  // 2. 협업 체크 테이블 추출 (FR-2)
+  // 2. 협업 체크 테이블 추출 (FR-2) - 개선된 휴리스틱
   const collaborationCheck: CollaborationCheck = {};
 
+  // 협업 테이블 후보 목록
+  const tableCandidates: Array<{ table: cheerio.Cheerio; score: number }> = [];
+
   $('table').each((i, table) => {
-    const headerText = $(table).find('th').text();
+    const $table = $(table);
+    const headerText = $table.find('th').text().toLowerCase();
+    const firstColumn = $table.find('tr').slice(1).first().find('td').first().text().trim();
 
-    // "협업" 또는 "체크" 포함 테이블만 파싱
-    if (headerText.includes('협업') || headerText.includes('체크')) {
-      $(table).find('tr').slice(1).each((j, row) => {
-        const cells = $(row).find('td');
-        if (cells.length >= 2) {
-          const partName = $(cells[0]).text().trim();
-          const checkMark = $(cells[1]).text().trim();
+    // 휴리스틱 점수 계산
+    let score = 0;
 
-          // ✅ 또는 O, o, check 등을 true로 인식
-          collaborationCheck[partName] =
-            checkMark.includes('✅') ||
-            checkMark.toLowerCase().includes('o') ||
-            checkMark.toLowerCase().includes('check');
-        }
-      });
+    // 1. 헤더에 관련 키워드 포함 (더 많은 키워드 지원)
+    const headerKeywords = ['협업', '체크', '파트', '직군', '담당', '분담', '리스트', '작업'];
+    if (headerKeywords.some(keyword => headerText.includes(keyword))) {
+      score += 10;
+    }
+
+    // 2. 첫 번째 컬럼이 파트명/직군명 (PREFIX_MAP에 있는 이름)
+    if (Object.keys(PREFIX_MAP).some(partName =>
+      firstColumn.includes(partName) || partName.includes(firstColumn)
+    )) {
+      score += 20;
+    }
+
+    // 3. 테이블 크기 (2개 이상의 행)
+    const rowCount = $table.find('tr').length;
+    if (rowCount >= 3) { // 헤더 + 최소 2개 행
+      score += rowCount;
+    }
+
+    if (score > 0) {
+      tableCandidates.push({ table: $table, score });
     }
   });
+
+  // 점수가 가장 높은 테이블 선택
+  if (tableCandidates.length > 0) {
+    tableCandidates.sort((a, b) => b.score - a.score);
+    const bestTable = tableCandidates[0].table;
+
+    bestTable.find('tr').slice(1).each((j, row) => {
+      const cells = $(row).find('td');
+      if (cells.length >= 2) {
+        const partName = $(cells[0]).text().trim();
+        const checkMark = $(cells[1]).text().trim();
+
+        // ✅ 또는 O, o, check 등을 true로 인식
+        collaborationCheck[partName] =
+          checkMark.includes('✅') ||
+          checkMark.toLowerCase().includes('o') ||
+          checkMark.toLowerCase().includes('check') ||
+          checkMark.includes('☑') ||
+          checkMark.includes('✓');
+      }
+    });
+
+    console.log(`✅ [parseConfluenceHtml] 협업 테이블 감지 성공 (점수: ${tableCandidates[0].score})`);
+  } else {
+    console.log(`⚠️ [parseConfluenceHtml] 협업 테이블 감지 실패 - 키워드 탐지로 fallback`);
+  }
 
   // 3. Epic 링크 추출 (FR-5)
   let epicKey: string | null = null;
@@ -229,7 +298,88 @@ export function parseConfluenceHtml(html: string): ParsedConfluence {
 }
 
 /**
- * FR-3: 키워드 기반 파트 탐지
+ * DoD 테이블 파싱
+ *
+ * Confluence 페이지에서 "DoD" 헤딩 아래의 테이블을 파싱하여 실제 작업 항목을 추출합니다.
+ *
+ * @param html - Confluence HTML
+ * @returns DoD 테이블 데이터 배열
+ */
+export function parseDoDTables(html: string): DoDTableData[] {
+  const $ = cheerio.load(html);
+  const dodTables: DoDTableData[] = [];
+
+  // "DoD" 헤딩 찾기 (h2, h3, h4)
+  $('h2, h3, h4').each((i, heading) => {
+    const headingText = $(heading).text().trim();
+
+    // "DoD"가 포함된 헤딩만 처리 (case-insensitive)
+    if (!headingText.toLowerCase().includes('dod')) return;
+
+    // 헤딩에서 파트명 추출 (예: "[기획] DoD" → "[기획]")
+    const prefixMatch = headingText.match(/\[([^\]]+)\]/);
+    const partName = prefixMatch ? prefixMatch[0] : null; // "[기획]" 형식 유지
+
+    // 헤딩 다음의 테이블 찾기
+    let nextElement = $(heading).next();
+    let table: cheerio.Cheerio | null = null;
+
+    // 다음 5개 요소까지 검색 (중간에 p 태그 등이 있을 수 있음)
+    for (let j = 0; j < 5 && nextElement.length > 0; j++) {
+      if (nextElement.is('table')) {
+        table = nextElement;
+        break;
+      }
+      nextElement = nextElement.next();
+    }
+
+    if (!table) return;
+
+    // 테이블 헤더 확인 (DoD 테이블인지 검증)
+    const headers = table.find('th').map((k, th) => $(th).text().trim().toLowerCase()).get();
+    const isDoDTable =
+      headers.includes('작업 항목') ||
+      headers.includes('작업') ||
+      headers.includes('task') ||
+      headers.includes('항목');
+
+    if (!isDoDTable) return;
+
+    // 테이블 행 파싱
+    const tasks: DoDTask[] = [];
+    table.find('tr').slice(1).each((k, row) => {
+      const cells = $(row).find('td');
+      if (cells.length < 2) return; // 최소 2개 컬럼 필요
+
+      const title = $(cells[0]).text().trim();
+      const description = cells.length > 1 ? $(cells[1]).text().trim() : '';
+      const resource = cells.length > 2 ? $(cells[2]).text().trim() : '-';
+      const dependency = cells.length > 3 ? $(cells[3]).text().trim() : '-';
+
+      if (title) {
+        tasks.push({
+          title: removeUnderscores(title),
+          description: removeUnderscores(description),
+          resource,
+          dependency
+        });
+      }
+    });
+
+    if (tasks.length > 0) {
+      dodTables.push({
+        partName,
+        tasks
+      });
+      console.log(`✅ [parseDoDTables] DoD 테이블 파싱 성공: ${partName || '공통'}, 작업 ${tasks.length}개`);
+    }
+  });
+
+  return dodTables;
+}
+
+/**
+ * FR-3: 키워드 기반 파트 탐지 - 개선: 핵심 키워드 필수, 보조 키워드로 보강
  *
  * @param bodyText - Confluence 본문 텍스트
  * @returns 탐지된 파트 목록
@@ -237,22 +387,37 @@ export function parseConfluenceHtml(html: string): ParsedConfluence {
 export function detectPartsByKeywords(bodyText: string): KeywordDetection {
   const detected: KeywordDetection = {};
 
-  for (const [partName, keywords] of Object.entries(KEYWORD_MAP)) {
-    const foundKeywords: string[] = [];
+  for (const [partName, { core, optional }] of Object.entries(KEYWORD_MAP)) {
+    const foundCoreKeywords: string[] = [];
+    const foundOptionalKeywords: string[] = [];
 
-    for (const keyword of keywords) {
-      // 대소문자 무시 검색
+    // 핵심 키워드 검색
+    for (const keyword of core) {
       const regex = new RegExp(keyword, 'gi');
       if (regex.test(bodyText)) {
-        foundKeywords.push(keyword);
+        foundCoreKeywords.push(keyword);
       }
     }
 
-    if (foundKeywords.length > 0) {
+    // 보조 키워드 검색
+    for (const keyword of optional) {
+      const regex = new RegExp(keyword, 'gi');
+      if (regex.test(bodyText)) {
+        foundOptionalKeywords.push(keyword);
+      }
+    }
+
+    // 감지 조건: 핵심 키워드 1개 이상 OR 보조 키워드 2개 이상
+    const hasCoreKeyword = foundCoreKeywords.length > 0;
+    const hasMultipleOptional = foundOptionalKeywords.length >= 2;
+
+    if (hasCoreKeyword || hasMultipleOptional) {
+      const allFoundKeywords = [...foundCoreKeywords, ...foundOptionalKeywords];
       detected[partName] = {
         detected: true,
-        keywords: foundKeywords
+        keywords: allFoundKeywords
       };
+      console.log(`✅ [detectPartsByKeywords] ${partName} 감지: ${allFoundKeywords.join(', ')}`);
     }
   }
 
@@ -272,19 +437,41 @@ export function extractPrefix(partName: string): string {
 /**
  * FR-4: DoD 파트 목록 생성
  *
- * 협업 체크 + 키워드 탐지 결과를 기반으로 파트 목록 생성.
- * 키워드 기반으로 기본 작업 항목을 자동 생성.
+ * 우선순위:
+ * 1. DoD 테이블 (실제 작업 항목)
+ * 2. 협업 체크
+ * 3. 키워드 탐지 (보조)
  *
  * @param parsed - 파싱된 Confluence 데이터
  * @param keywordDetection - 키워드 탐지 결과
+ * @param dodTables - DoD 테이블 데이터
  * @returns DoD 파트 목록
  */
 export function generateDoDParts(
   parsed: ParsedConfluence,
-  keywordDetection: KeywordDetection
+  keywordDetection: KeywordDetection,
+  dodTables: DoDTableData[] = []
 ): DoDPart[] {
   const parts: DoDPart[] = [];
   const processedParts = new Set<string>();
+
+  // DoD 테이블에서 파트별 작업 항목 맵 생성
+  const dodTasksMap = new Map<string, DoDTask[]>();
+
+  // 공통 DoD 테이블 (파트명 없음)
+  let commonDoDTasks: DoDTask[] = [];
+
+  for (const dodTable of dodTables) {
+    if (dodTable.partName) {
+      // 파트별 DoD (예: "[기획] DoD")
+      dodTasksMap.set(dodTable.partName, dodTable.tasks);
+    } else {
+      // 공통 DoD (파트명 없음)
+      commonDoDTasks = dodTable.tasks;
+    }
+  }
+
+  console.log(`📋 [generateDoDParts] DoD 테이블 파싱 결과: 파트별 ${dodTasksMap.size}개, 공통 ${commonDoDTasks.length}개`);
 
   // 1. 협업 체크된 파트 추가
   for (const [partName, checked] of Object.entries(parsed.collaborationCheck)) {
@@ -292,14 +479,33 @@ export function generateDoDParts(
 
     processedParts.add(partName);
 
+    const prefix = extractPrefix(partName);
+
+    // DoD 테이블에서 해당 파트의 작업 항목 찾기
+    let tasks: DoDTask[] = [];
+
+    if (dodTasksMap.has(prefix)) {
+      // 파트별 DoD 테이블이 있으면 사용
+      tasks = dodTasksMap.get(prefix)!;
+      console.log(`✅ [generateDoDParts] ${partName}: DoD 테이블 사용 (${tasks.length}개 작업)`);
+    } else if (commonDoDTasks.length > 0) {
+      // 공통 DoD 테이블이 있으면 사용
+      tasks = commonDoDTasks;
+      console.log(`✅ [generateDoDParts] ${partName}: 공통 DoD 테이블 사용 (${tasks.length}개 작업)`);
+    } else {
+      // DoD 테이블이 없으면 기본 템플릿 사용
+      tasks = generateDefaultTasks(partName, []);
+      console.log(`⚠️ [generateDoDParts] ${partName}: DoD 테이블 없음, 기본 템플릿 사용`);
+    }
+
     parts.push({
       partName,
-      prefix: extractPrefix(partName),
+      prefix,
       checked: true,
       detected: false,
       status: 'normal',
       keywords: [],
-      tasks: generateDefaultTasks(partName, []) // 기본 작업 항목 생성
+      tasks
     });
   }
 
@@ -315,7 +521,7 @@ export function generateDoDParts(
         existingPart.tasks = generateDefaultTasks(partName, detection.keywords);
       }
     } else {
-      // 협업 체크 없고 키워드만 탐지 → "추가 검토" 상태
+      // 협업 체크 없고 키워드만 탐지 → "추가 검토" 상태, 기본 작업 항목 생성
       processedParts.add(partName);
 
       parts.push({
@@ -325,8 +531,9 @@ export function generateDoDParts(
         detected: true,
         status: 'review', // 추가 검토 필요
         keywords: detection.keywords,
-        tasks: generateDefaultTasks(partName, detection.keywords)
+        tasks: generateDefaultTasks(partName, detection.keywords) // 기본 작업 항목 생성
       });
+      console.log(`⚠️ [generateDoDParts] ${partName}: 키워드 탐지 (추가 검토 필요)`);
     }
   }
 
@@ -427,11 +634,14 @@ export function extractDoD(
   // 1. HTML 파싱
   const parsed = parseConfluenceHtml(html);
 
-  // 2. 키워드 탐지
+  // 2. DoD 테이블 파싱 (최우선)
+  const dodTables = parseDoDTables(html);
+
+  // 3. 키워드 탐지 (보조)
   const keywordDetection = detectPartsByKeywords(parsed.bodyText);
 
-  // 3. DoD 파트 생성
-  const parts = generateDoDParts(parsed, keywordDetection);
+  // 4. DoD 파트 생성 (DoD 테이블 우선, 없으면 템플릿)
+  const parts = generateDoDParts(parsed, keywordDetection, dodTables);
 
   // 4. 검증 체크리스트 실행
   const validation = validateDoD(parts, parsed);

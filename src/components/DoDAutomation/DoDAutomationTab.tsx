@@ -3,6 +3,7 @@
  * Main tab component for DoD extraction and Jira automation workflow
  */
 
+import { useEffect } from 'react';
 import { useDoDStore } from '../../store/useDoDStore';
 import { Step1_ConfluenceInput } from './Step1_ConfluenceInput';
 import { Step2_DoDReview } from './Step2_DoDReview';
@@ -10,7 +11,12 @@ import { Step3_TaskCreation } from './Step3_TaskCreation';
 import { Badge } from '../ui/badge';
 
 export function DoDAutomationTab() {
-  const { currentStep, extraction } = useDoDStore();
+  const { currentStep, extraction, resetKeepingUrl } = useDoDStore();
+
+  // Reset workflow on tab mount, keeping URL input
+  useEffect(() => {
+    resetKeepingUrl();
+  }, []);
 
   console.log('🎯 [DoDAutomationTab] 렌더링 - currentStep:', currentStep);
   console.log('🎯 [DoDAutomationTab] extraction:', extraction ? '있음' : '없음');

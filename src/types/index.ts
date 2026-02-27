@@ -98,6 +98,118 @@ export interface EditRecord {
     tickets: EditedTicket[];
 }
 
+// ============================================================================
+// DoD Automation Types (Phase 1)
+// ============================================================================
+
+/**
+ * Confluence 데이터
+ */
+export interface ConfluenceData {
+    pageId: string;
+    title: string;
+    url: string;
+    htmlContent: string;
+    epicLink: string | null;
+}
+
+/**
+ * HTML 파싱 결과
+ */
+export interface ParsedConfluence {
+    title: string;
+    collaborationCheck: CollaborationCheck;
+    bodyText: string;
+    epicKey: string | null;
+}
+
+/**
+ * 협업 체크 테이블
+ */
+export interface CollaborationCheck {
+    [partName: string]: boolean;
+}
+
+/**
+ * DoD 추출 결과 (전체)
+ */
+export interface DoDExtraction {
+    confluencePageId: string;
+    confluenceUrl: string;
+    title: string;
+    epicKey: string;
+
+    parts: DoDPart[];
+    validation: ValidationResult;
+
+    plannedTasks: PlannedTask[];
+    existingTasks: ExistingTask[];
+}
+
+/**
+ * 파트/직군 정보
+ */
+export interface DoDPart {
+    partName: string;
+    prefix: string;
+    checked: boolean;
+    detected: boolean;
+    status: 'normal' | 'review' | 'none';
+    keywords: string[];
+    tasks: DoDTask[];
+}
+
+/**
+ * DoD 작업 항목
+ */
+export interface DoDTask {
+    title: string;
+    description: string;
+    resource: string;
+    dependency: string;
+}
+
+/**
+ * FR-10 검증 결과
+ */
+export interface ValidationResult {
+    passed: boolean;
+    issues: string[];
+}
+
+/**
+ * 생성 예정 Task
+ */
+export interface PlannedTask {
+    prefix: string;
+    title: string;
+    description: string;
+    parentKey: string;
+    blockers: string[];
+    blockedBy: string[];
+}
+
+/**
+ * 기존 Task
+ */
+export interface ExistingTask {
+    key: string;
+    prefix: string;
+    title: string;
+}
+
+/**
+ * Task 생성 결과
+ */
+export interface CreationResult {
+    prefix: string;
+    title: string;
+    success: boolean;
+    key: string | null;
+    url: string | null;
+    error: string | null;
+}
+
 // ============================================
 // DoD Automation Types
 // ============================================

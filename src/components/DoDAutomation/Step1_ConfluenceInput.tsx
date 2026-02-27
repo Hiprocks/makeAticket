@@ -27,11 +27,18 @@ import {
 import { toast } from 'sonner';
 
 export function Step1_ConfluenceInput() {
-  const { setConfluenceData, setExtraction } = useDoDStore();
+  const { confluenceUrl, setConfluenceUrl, setConfluenceData, setExtraction, setEpicSummary } = useDoDStore();
 
   const [loading, setLoading] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'failed'>('idle');
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(confluenceUrl); // Initialize from store
+
+  // Sync input with store
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInput(value);
+    setConfluenceUrl(value); // Save to store
+  };
 
   const handleTestConnection = async () => {
     setLoading(true);
@@ -223,6 +230,137 @@ export function Step1_ConfluenceInput() {
     toast.success('✅ 임시 데이터 로드 완료! Step 2로 이동합니다.');
   };
 
+  const handleAIAnalysis = async () => {
+    if (!input.trim()) {
+      toast.error('❌ Confluence URL 또는 페이지 ID를 입력하세요');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. Extract page ID
+      let extractedPageId: string | null = null;
+
+      if (input.startsWith('http')) {
+        extractedPageId = extractPageIdFromUrl(input);
+        if (!extractedPageId) {
+          throw new Error('URL에서 페이지 ID를 찾을 수 없습니다.');
+        }
+      } else if (isValidPageId(input)) {
+        extractedPageId = input.trim();
+      } else {
+        throw new Error('올바른 Confluence URL 또는 페이지 ID를 입력하세요.');
+      }
+
+      // 2. Fetch Confluence page
+      toast.info('🤖 AI 분석 시작: Confluence 페이지 조회 중...');
+      const page = await fetchConfluencePage(extractedPageId);
+
+      // 3. Parse HTML for Epic link only
+      const parsed = parseConfluenceHtml(page.body);
+
+      // 4. Call AI analysis API
+      toast.info('🤖 Claude AI가 기획서를 분석하고 있습니다...');
+      const aiResponse = await fetch('/api/confluence/analyze-dod', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: page.title,
+          content: page.body,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorData = await aiResponse.json();
+        if (errorData.fallback) {
+          throw new Error('AI 분석을 사용할 수 없습니다. 수동 분석을 사용하세요.');
+        }
+        throw new Error(errorData.error || 'AI 분석 실패');
+      }
+
+      const aiResult = await aiResponse.json();
+      console.log('🤖 [AI Analysis] Result:', aiResult);
+
+      // 5. Convert AI result to DoDExtraction format
+      const parts = aiResult.parts.map((aiPart: any) => ({
+        partName: aiPart.partName,
+        prefix: aiPart.prefix,
+        checked: true, // AI가 선택한 파트는 모두 checked
+        detected: false,
+        status: 'normal' as const,
+        keywords: [],
+        tasks: aiPart.tasks || [],
+      }));
+
+      // 6. Query Epic if exists
+      const confluenceUrl = input.startsWith('http') ? input : '';
+      let finalEpicKey = parsed.epicKey || '';
+      let existingTasks = [];
+      let epicSummary = '';
+
+      if (finalEpicKey) {
+        toast.info(`🔍 Epic 조회 중: ${finalEpicKey}...`);
+        const epicData = await queryEpic(finalEpicKey);
+        existingTasks = epicData.existingTasks;
+        epicSummary = epicData.summary;
+        setEpicSummary(epicSummary);
+        toast.success(`✅ Epic 조회 완료: "${epicSummary}"`);
+      }
+
+      // 7. Save Confluence data
+      setConfluenceData({
+        pageId: extractedPageId,
+        title: page.title,
+        url: confluenceUrl,
+        htmlContent: page.body,
+        epicLink: finalEpicKey,
+      });
+
+      // 8. Create extraction with AI result
+      const extraction = {
+        confluencePageId: extractedPageId,
+        confluenceUrl,
+        title: page.title,
+        epicKey: finalEpicKey,
+        parts,
+        validation: {
+          passed: true,
+          issues: [],
+        },
+        plannedTasks: [],
+        existingTasks,
+      };
+
+      // Generate planned tasks
+      const blockerRules: Record<string, string[]> = {};
+      extraction.plannedTasks = generatePlannedTasks(
+        extraction.parts,
+        extraction.epicKey,
+        epicSummary || extraction.title,
+        confluenceUrl,
+        blockerRules,
+        existingTasks
+      );
+
+      console.log('AI Planned Tasks Count:', extraction.plannedTasks.length);
+
+      // 9. Save and move to Step 2
+      setExtraction(extraction);
+
+      toast.success(
+        `✅ AI 분석 완료: ${parts.length}개 파트, ${extraction.plannedTasks.length}개 Task 예정`
+      );
+    } catch (error) {
+      toast.error(`❌ AI 분석 실패: ${(error as Error).message}`);
+      console.error('AI analysis error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFetchPage = async () => {
     if (!input.trim()) {
       toast.error('❌ Confluence URL 또는 페이지 ID를 입력하세요');
@@ -277,10 +415,16 @@ export function Step1_ConfluenceInput() {
 
       // 6. Query Epic and existing tasks (FR-5) - only if Epic exists
       let existingTasks = [];
+      let epicSummary = '';
       if (finalEpicKey) {
         toast.info(`🔍 Epic 조회 중: ${finalEpicKey}...`);
         const epicData = await queryEpic(finalEpicKey);
         existingTasks = epicData.existingTasks;
+        epicSummary = epicData.summary;
+
+        // Save Epic summary to store
+        setEpicSummary(epicSummary);
+        toast.success(`✅ Epic 조회 완료: "${epicSummary}"`);
       }
 
       // 7. Extract DoD (FR-2, FR-3, FR-4)
@@ -322,9 +466,10 @@ export function Step1_ConfluenceInput() {
       extraction.plannedTasks = generatePlannedTasks(
         extraction.parts,
         extraction.epicKey,
-        extraction.title,
+        epicSummary || extraction.title, // Use Epic summary if available, fallback to page title
         confluenceUrl,
-        blockerRules
+        blockerRules,
+        existingTasks // Pass existing tasks for filtering
       );
 
       console.log('Planned Tasks Count:', extraction.plannedTasks.length);
@@ -423,7 +568,7 @@ export function Step1_ConfluenceInput() {
             type="text"
             placeholder="https://krafton.atlassian.net/wiki/spaces/SPACE/pages/12345/Title"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             disabled={loading}
           />
           <p className="text-xs text-gray-500">
@@ -431,20 +576,38 @@ export function Step1_ConfluenceInput() {
           </p>
         </div>
 
-        <Button
-          onClick={handleFetchPage}
-          disabled={loading || !input.trim()}
-          className="w-full"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              페이지 불러오는 중...
-            </>
-          ) : (
-            'DoD 추출 시작'
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleAIAnalysis}
+            disabled={loading || !input.trim()}
+            className="flex-1"
+            variant="default"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                AI 분석 중...
+              </>
+            ) : (
+              '🤖 AI 자동 분석 (권장)'
+            )}
+          </Button>
+          <Button
+            onClick={handleFetchPage}
+            disabled={loading || !input.trim()}
+            className="flex-1"
+            variant="outline"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                수동 분석 중...
+              </>
+            ) : (
+              '수동 분석 (키워드)'
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Help */}

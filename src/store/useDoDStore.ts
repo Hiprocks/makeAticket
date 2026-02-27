@@ -22,6 +22,8 @@ interface DoDStore {
 
   // Step 1: Confluence Data
   confluenceData: ConfluenceData | null;
+  confluenceUrl: string; // User input URL to preserve across resets
+  epicSummary: string; // Epic title for ticket generation
 
   // Step 2: DoD Extraction Result
   extraction: DoDExtraction | null;
@@ -34,6 +36,8 @@ interface DoDStore {
   // Actions
   setCurrentStep: (step: 1 | 2 | 3) => void;
   setConfluenceData: (data: ConfluenceData) => void;
+  setConfluenceUrl: (url: string) => void;
+  setEpicSummary: (summary: string) => void;
   setExtraction: (data: DoDExtraction) => void;
   toggleTask: (prefix: string) => void;
   selectAllTasks: () => void;
@@ -41,11 +45,14 @@ interface DoDStore {
   setCreationResults: (results: CreationResult[]) => void;
   setIsCreating: (isCreating: boolean) => void;
   reset: () => void;
+  resetKeepingUrl: () => void; // Reset all except confluenceUrl
 }
 
 const initialState = {
   currentStep: 1 as const,
   confluenceData: null,
+  confluenceUrl: '',
+  epicSummary: '',
   extraction: null,
   selectedTasks: new Set<string>(),
   creationResults: [],
@@ -64,6 +71,12 @@ export const useDoDStore = create<DoDStore>()(
           confluenceData: data,
           currentStep: 1,
         }),
+
+      setConfluenceUrl: (url) =>
+        set({ confluenceUrl: url }),
+
+      setEpicSummary: (summary) =>
+        set({ epicSummary: summary }),
 
       setExtraction: (data) => {
         console.log('💾 [Store] setExtraction 호출됨');
@@ -104,6 +117,16 @@ export const useDoDStore = create<DoDStore>()(
         set({ isCreating }),
 
       reset: () => set(initialState),
+
+      resetKeepingUrl: () => {
+        const currentUrl = get().confluenceUrl;
+        const currentEpicSummary = get().epicSummary;
+        set({
+          ...initialState,
+          confluenceUrl: currentUrl, // Preserve URL
+          epicSummary: currentEpicSummary, // Preserve Epic summary
+        });
+      },
     }),
     {
       name: 'jbc-dod-v2',
