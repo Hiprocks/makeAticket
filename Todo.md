@@ -18,6 +18,28 @@
   - [x] Zustand store (`useDoDStore.ts`)
   - [x] Badge/Alert UI 컴포넌트 추가
   - [x] Layout에 "DoD Automation" 탭 추가
+- [x] Phase 1.5: AI 기반 DoD 분석 (1일, 2026-02-27 완료)
+  - [x] Claude API 통합 (Sonnet 4.6)
+  - [x] AI 자동 분석 버튼 추가
+  - [x] False positive 방지 (VFX/사운드 오탐지 제거)
+  - [x] `jiraAutomationService.ts` 생성
+  - [x] Epic 조회 및 기존 Task 필터링
+- [ ] **Phase 1.6: DoD 추출 규칙 및 UI 개선** (2-3일, 우선순위: 높음)
+  - [ ] 티켓 제목 생성 규칙 검토 및 개선
+    - 현재: `[prefix] featureName` 형식
+    - 개선 필요: Epic 제목 기반, 파트별 커스터마이징
+  - [ ] DoD 추출 규칙 검토 및 정교화
+    - AI 프롬프트 튜닝
+    - 협업 테이블 감지 정확도 향상
+    - 키워드 맵 업데이트
+  - [ ] DoD 검토 화면 (Step2) UI 개선
+    - 체크박스 그룹화 및 가독성 향상
+    - Task 미리보기 개선
+    - 수정/삭제 기능 추가
+  - [ ] Task 생성 화면 (Step3) UI 개선
+    - 진행률 표시 개선
+    - 생성 결과 시각화
+    - 실패 항목 재시도 버튼
 - [ ] Phase 2: Jira 연동 강화 (2-3일)
   - [ ] 중복 Epic 검색 기능
   - [ ] Blocker 링크 API 구현
@@ -48,6 +70,13 @@
 - [ ] 담당자/Sprint 목록 새로고침 기능
 
 ## 우선순위: 중간
+
+### AI 인프라 개선
+- [x] System Prompt 외부 파일 관리 (2026-02-27 완료)
+  - [x] promptLoader.js 서비스 구현
+  - [x] prompts/system/ 디렉토리 구조
+  - [x] server/index.js 통합
+  - [x] 캐싱 메커니즘 및 Fallback
 
 ### 미디어 자동 수집
 - [ ] YouTube URL 입력 시 주요 장면 자동 스크린샷 수집/저장 (서버 사이드 처리)
@@ -90,7 +119,27 @@
 
 ---
 
-## 📋 최근 완료 항목 (2026-02-25)
+## 📋 최근 완료 항목 (2026-02-27)
+- ✅ **System Prompt 외부 파일 관리** (2026-02-27)
+  - promptLoader.js 서비스 구현 (캐싱, Fallback)
+  - prompts/system/dod-analysis.txt 분리
+  - server/index.js 통합 (50줄 → 1줄)
+  - 유지보수성 대폭 향상 (프롬프트 수정 시 코드 변경 불필요)
+  - 관련 파일:
+    - Service: `server/promptLoader.js` (신규)
+    - Prompt: `prompts/system/dod-analysis.txt` (신규)
+    - Backend: `server/index.js` (통합)
+- ✅ **AI 기반 DoD 분석 기능 구현** (2026-02-27)
+  - Claude Sonnet 4.6 API 통합
+  - AI 자동 분석 버튼 추가 ("🤖 AI 자동 분석 (권장)")
+  - 게임 개발 전문 System Prompt 구현
+  - False positive 방지 (VFX/사운드 오탐지 제거)
+  - Epic 조회 및 기존 Task 중복 필터링
+  - 관련 파일:
+    - Backend: `server/index.js` (`/api/confluence/analyze-dod`)
+    - Service: `jiraAutomationService.ts` (신규)
+    - Frontend: `Step1_ConfluenceInput.tsx` (AI 분석 통합)
+    - Package: `@anthropic-ai/sdk` v0.78.0 설치
 - ✅ **DoD Automation Phase 1 완료** (2026-02-25)
   - Confluence 페이지 연동 및 HTML 파싱 (Cheerio)
   - DoD 항목 자동 추출 (Epic + Task 분리)
@@ -115,4 +164,4 @@
 
 ---
 
-**마지막 업데이트**: 2026-02-25
+**마지막 업데이트**: 2026-02-27

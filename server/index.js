@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
+import { getPromptLoader } from './promptLoader.js';
 
 // ESM에서 __dirname 사용을 위한 설정
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +23,9 @@ app.use(express.json({ limit: '5mb' }));
 
 const metaCache = new Map();
 const META_TTL_MS = 10 * 60 * 1000;
+
+// Prompt Loader 초기화
+const promptLoader = getPromptLoader({ cacheEnabled: true });
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
@@ -471,56 +475,8 @@ app.post('/api/confluence/analyze-dod', async (req, res) => {
 
     const anthropic = new Anthropic({ apiKey });
 
-    const systemPrompt = `당신은 게임 개발 프로젝트의 DoD(Definition of Done) 자동 생성 전문가입니다.
-
-[임무]
-Confluence 기획서를 분석하여 협업 파트와 각 파트의 작업 항목(DoD)을 추출하세요.
-
-[분석 기준]
-1. 협업 파트 판단:
-   - 인게임 기획: 게임플레이 설계, 밸런스, 기능 명세
-   - 아웃게임 기획: 메뉴, 시스템, 로비 설계
-   - UI 파트: UI/HUD 제작, 메뉴, 팝업, 스트링
-   - 인게임 개발: 플레이 로직 구현, 인게임 기능 (클라이언트)
-   - 아웃게임 개발: 아웃게임 시스템 구현 (클라이언트)
-   - 서버 파트: Dedicated Server 로직, DB, 프로토콜
-   - 아트-2D: 캐릭터/배경 원화, 컨셉 아트
-   - 아트-3D: 3D 모델링, 리깅
-   - 애니메이션 파트: 캐릭터/오브젝트 애니메이션
-   - VFX 파트: 이펙트, 파티클 제작 (실제 리소스 제작이 필요한 경우만)
-   - 사운드 파트: 효과음, BGM 제작 (실제 사운드 리소스 제작이 필요한 경우만)
-
-2. 작업 항목 추출 규칙:
-   - 각 파트당 3-5개 작업 항목
-   - 구체적이고 실행 가능한 단위
-   - 언더스코어(_) 절대 금지
-   - 기능 단위로만 서술 (변수명/계산식 노출 금지)
-   - "N개", "N종" 형식 사용 권장
-
-3. 주의사항 (매우 중요):
-   - "사운드 볼륨 조절", "UI 메뉴" 같은 단순 기능 설명 ≠ 실제 작업
-   - 실제 리소스 제작/구현이 명확히 필요한 경우만 파트 추가
-   - 맥락을 고려: "옵션 메뉴"만 있고 실제 리소스 제작 언급 없으면 제외
-   - 의심스러우면 파트 제외 (false positive 방지)
-
-[출력 형식]
-JSON 형식으로만 반환하세요. 다른 텍스트는 절대 포함하지 마세요.
-{
-  "parts": [
-    {
-      "partName": "인게임 기획",
-      "prefix": "[기획]",
-      "tasks": [
-        {
-          "title": "작업 제목",
-          "description": "상세 설명 (기능 단위, N개/N종 표기)",
-          "resource": "리소스 (예: 기획팀 1명)",
-          "dependency": "의존성 (예: - 또는 파트명)"
-        }
-      ]
-    }
-  ]
-}`;
+    // System Prompt를 외부 파일에서 로드
+    const systemPrompt = await promptLoader.loadSystemPrompt('dod-analysis');
 
     const userPrompt = `다음 Confluence 기획서를 분석하여 DoD를 생성하세요.
 
