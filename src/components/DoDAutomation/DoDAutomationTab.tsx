@@ -10,7 +10,10 @@ import { Step3_TaskCreation } from './Step3_TaskCreation';
 import { Badge } from '../ui/badge';
 
 export function DoDAutomationTab() {
-  const { currentStep } = useDoDStore();
+  const { currentStep, extraction } = useDoDStore();
+
+  console.log('🎯 [DoDAutomationTab] 렌더링 - currentStep:', currentStep);
+  console.log('🎯 [DoDAutomationTab] extraction:', extraction ? '있음' : '없음');
 
   return (
     <div className="p-6 max-w-6xl mx-auto">

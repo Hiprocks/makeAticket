@@ -1,6 +1,6 @@
 /**
- * DoD Automation Store
- * Manages state for DoD extraction and Jira ticket creation workflow
+ * DoD Automation Store - v2.0
+ * Plan v1.2 기준 상태 관리
  */
 
 import { create } from 'zustand';
@@ -8,198 +8,117 @@ import { persist } from 'zustand/middleware';
 import { createJSONStorage } from 'zustand/middleware';
 import { indexedDbStorage } from '../lib/indexedDbStorage';
 import type {
-  DoDItem,
-  DoDExtractionResult,
-  DoDCreatedTicket,
-  DoDAutomationRecord,
+  ConfluenceData,
+  DoDExtraction,
+  DoDPart,
+  PlannedTask,
+  ExistingTask,
+  CreationResult,
 } from '../types';
 
 interface DoDStore {
-  // Step 1: Confluence Input
-  pageUrl: string;
-  pageId: string;
-  pageTitle: string;
-  pageHtml: string;
-
-  // Step 2: DoD Review
-  extractionResult: DoDExtractionResult | null;
-  reviewedItems: DoDItem[];
-
-  // Step 3: Task Creation
-  creationProgress: {
-    total: number;
-    current: number;
-    status: 'idle' | 'creating' | 'completed' | 'failed';
-  };
-  createdTickets: DoDCreatedTicket[];
-
-  // History
-  records: DoDAutomationRecord[];
-
   // Current step (1, 2, or 3)
   currentStep: 1 | 2 | 3;
 
+  // Step 1: Confluence Data
+  confluenceData: ConfluenceData | null;
+
+  // Step 2: DoD Extraction Result
+  extraction: DoDExtraction | null;
+
+  // Step 3: Task Creation
+  selectedTasks: Set<string>; // 선택된 Task prefix 목록
+  creationResults: CreationResult[];
+  isCreating: boolean;
+
   // Actions
-  setPageUrl: (url: string) => void;
-  setPageId: (id: string) => void;
-  setPageData: (title: string, html: string) => void;
-  setExtractionResult: (result: DoDExtractionResult) => void;
-  setReviewedItems: (items: DoDItem[]) => void;
-  updateReviewedItem: (id: string, updates: Partial<DoDItem>) => void;
-  deleteReviewedItem: (id: string) => void;
   setCurrentStep: (step: 1 | 2 | 3) => void;
-  startCreation: (totalCount: number) => void;
-  updateCreationProgress: (current: number) => void;
-  completeCreation: () => void;
-  failCreation: () => void;
-  addCreatedTicket: (ticket: DoDCreatedTicket) => void;
-  saveRecord: () => void;
-  resetWorkflow: () => void;
+  setConfluenceData: (data: ConfluenceData) => void;
+  setExtraction: (data: DoDExtraction) => void;
+  toggleTask: (prefix: string) => void;
+  selectAllTasks: () => void;
+  deselectAllTasks: () => void;
+  setCreationResults: (results: CreationResult[]) => void;
+  setIsCreating: (isCreating: boolean) => void;
+  reset: () => void;
 }
+
+const initialState = {
+  currentStep: 1 as const,
+  confluenceData: null,
+  extraction: null,
+  selectedTasks: new Set<string>(),
+  creationResults: [],
+  isCreating: false,
+};
 
 export const useDoDStore = create<DoDStore>()(
   persist(
     (set, get) => ({
-      // Initial state
-      pageUrl: '',
-      pageId: '',
-      pageTitle: '',
-      pageHtml: '',
-      extractionResult: null,
-      reviewedItems: [],
-      creationProgress: {
-        total: 0,
-        current: 0,
-        status: 'idle',
-      },
-      createdTickets: [],
-      records: [],
-      currentStep: 1,
-
-      // Actions
-      setPageUrl: (url) => set({ pageUrl: url }),
-
-      setPageId: (id) => set({ pageId: id }),
-
-      setPageData: (title, html) =>
-        set({ pageTitle: title, pageHtml: html }),
-
-      setExtractionResult: (result) =>
-        set({
-          extractionResult: result,
-          reviewedItems: result.items,
-          currentStep: 2,
-        }),
-
-      setReviewedItems: (items) => set({ reviewedItems: items }),
-
-      updateReviewedItem: (id, updates) =>
-        set((state) => ({
-          reviewedItems: state.reviewedItems.map((item) =>
-            item.id === id ? { ...item, ...updates } : item
-          ),
-        })),
-
-      deleteReviewedItem: (id) =>
-        set((state) => ({
-          reviewedItems: state.reviewedItems.filter((item) => item.id !== id),
-        })),
+      ...initialState,
 
       setCurrentStep: (step) => set({ currentStep: step }),
 
-      startCreation: (totalCount) =>
+      setConfluenceData: (data) =>
         set({
-          creationProgress: {
-            total: totalCount,
-            current: 0,
-            status: 'creating',
-          },
-          createdTickets: [],
-          currentStep: 3,
-        }),
-
-      updateCreationProgress: (current) =>
-        set((state) => ({
-          creationProgress: {
-            ...state.creationProgress,
-            current,
-          },
-        })),
-
-      completeCreation: () =>
-        set((state) => ({
-          creationProgress: {
-            ...state.creationProgress,
-            status: 'completed',
-          },
-        })),
-
-      failCreation: () =>
-        set((state) => ({
-          creationProgress: {
-            ...state.creationProgress,
-            status: 'failed',
-          },
-        })),
-
-      addCreatedTicket: (ticket) =>
-        set((state) => ({
-          createdTickets: [...state.createdTickets, ticket],
-        })),
-
-      saveRecord: () => {
-        const state = get();
-        const successCount = state.createdTickets.filter(
-          (t) => t.status === 'success'
-        ).length;
-        const failCount = state.createdTickets.filter(
-          (t) => t.status === 'failed'
-        ).length;
-
-        // Group by Epic to count unique Epics
-        const uniqueEpics = new Set(
-          state.createdTickets
-            .filter((t) => t.epicKey)
-            .map((t) => t.epicKey)
-        );
-
-        const record: DoDAutomationRecord = {
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-          pageTitle: state.pageTitle,
-          pageUrl: state.pageUrl,
-          epicCount: uniqueEpics.size,
-          taskCount: state.createdTickets.length,
-          successCount,
-          failCount,
-          tickets: state.createdTickets,
-        };
-
-        set((state) => ({
-          records: [record, ...state.records],
-        }));
-      },
-
-      resetWorkflow: () =>
-        set({
-          pageUrl: '',
-          pageId: '',
-          pageTitle: '',
-          pageHtml: '',
-          extractionResult: null,
-          reviewedItems: [],
-          creationProgress: {
-            total: 0,
-            current: 0,
-            status: 'idle',
-          },
-          createdTickets: [],
+          confluenceData: data,
           currentStep: 1,
         }),
+
+      setExtraction: (data) => {
+        console.log('💾 [Store] setExtraction 호출됨');
+        console.log('💾 [Store] data:', data);
+        console.log('💾 [Store] currentStep을 2로 변경');
+        set({
+          extraction: data,
+          currentStep: 2,
+        });
+        console.log('💾 [Store] setExtraction 완료');
+      },
+
+      toggleTask: (prefix) =>
+        set((state) => {
+          const newSelected = new Set(state.selectedTasks);
+          if (newSelected.has(prefix)) {
+            newSelected.delete(prefix);
+          } else {
+            newSelected.add(prefix);
+          }
+          return { selectedTasks: newSelected };
+        }),
+
+      selectAllTasks: () =>
+        set((state) => {
+          if (!state.extraction) return {};
+          const allPrefixes = state.extraction.plannedTasks.map((t) => t.prefix);
+          return { selectedTasks: new Set(allPrefixes) };
+        }),
+
+      deselectAllTasks: () =>
+        set({ selectedTasks: new Set() }),
+
+      setCreationResults: (results) =>
+        set({ creationResults: results, isCreating: false }),
+
+      setIsCreating: (isCreating) =>
+        set({ isCreating }),
+
+      reset: () => set(initialState),
     }),
     {
-      name: 'jbc-dod',
+      name: 'jbc-dod-v2',
       storage: createJSONStorage(() => indexedDbStorage),
+      // Set은 JSON.stringify가 안 되므로 변환 필요
+      partialize: (state) => ({
+        ...state,
+        selectedTasks: Array.from(state.selectedTasks),
+      }),
+      // @ts-ignore - Set 복원
+      merge: (persistedState: any, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        selectedTasks: new Set(persistedState?.selectedTasks || []),
+      }),
     }
   )
 );
